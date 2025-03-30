@@ -1,8 +1,8 @@
-
 "use client"
 
-import { useState, useEffect, useMemo } from "react";
-import { useDrag } from "react-dnd";
+import React, { useRef, useEffect } from "react"
+import { useState } from "react"
+import { useDrag } from "react-dnd"
 import {
   Sidebar,
   SidebarContent,
@@ -14,161 +14,387 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
-} from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, AlertCircle } from "lucide-react";
-import { fetchKicadComponents } from "@/lib/kicad-loader";
-import { COMPONENT_CATEGORIES } from "@/lib/kicad-categories";
-import type { KicadComponent } from "@/types/kicad";
-type CategoryKey = keyof typeof COMPONENT_CATEGORIES | "all";
+} from "@/components/ui/sidebar"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useCircuitComponents } from "./circuit-component-context"
+import { 
+  Zap, Battery, Circle, Square, Cpu, ToggleLeft, Lightbulb, Search, Layers,
+  Gauge, Wrench, Fan, Power, ChevronLeft, ChevronRight
+} from "lucide-react"
 
-function DraggableComponent({ component }: { component: KicadComponent }) {
+// Custom icons for electronic components
+const Resistor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 12h5" />
+    <path d="M17 12h5" />
+    <rect x="7" y="9" width="10" height="6" rx="2" />
+  </svg>
+);
+
+const Capacitor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 12h7" />
+    <path d="M15 12h7" />
+    <path d="M9 6v12" />
+    <path d="M15 6v12" />
+  </svg>
+);
+
+const Diode = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M4 12h6" />
+    <path d="M14 12h6" />
+    <polygon points="10 8 14 12 10 16" />
+    <line x1="14" y1="8" x2="14" y2="16" />
+  </svg>
+);
+
+const Transistor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="6" />
+    <line x1="12" y1="6" x2="12" y2="2" />
+    <line x1="6" y1="18" x2="6" y2="22" />
+    <line x1="18" y1="18" x2="18" y2="22" />
+  </svg>
+);
+
+const Chip = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="5" y="5" width="14" height="14" rx="2" />
+    <line x1="9" y1="2" x2="9" y2="5" />
+    <line x1="15" y1="2" x2="15" y2="5" />
+    <line x1="9" y1="19" x2="9" y2="22" />
+    <line x1="15" y1="19" x2="15" y2="22" />
+    <line x1="2" y1="9" x2="5" y2="9" />
+    <line x1="2" y1="15" x2="5" y2="15" />
+    <line x1="19" y1="9" x2="22" y2="9" />
+    <line x1="19" y1="15" x2="22" y2="15" />
+  </svg>
+);
+
+interface ComponentDefinition {
+  type: string
+  name: string
+  icon: React.ElementType
+  value?: string
+  footprint: any
+  source?: "kicad" | "custom" | "api"
+  description?: string
+}
+
+const getIconForType = (type: string): React.ElementType => {
+  switch (type) {
+    case "resistor": return Resistor;
+    case "capacitor": return Capacitor;
+    case "inductor": return Circle;
+    case "diode": return Diode;
+    case "transistor": return Transistor;
+    case "ic": return Chip;
+    case "led": return Lightbulb;
+    case "switch": return ToggleLeft;
+    case "voltmeter": return Gauge;
+    case "ammeter": return Gauge;
+    case "oscilloscope": return Gauge;
+    case "power_supply": return Power;
+    case "ground": return Square;
+    case "connector": return Square;
+    case "potentiometer": return Wrench;
+    case "fuse": return Zap;
+    case "relay": return Fan;
+    case "transformer": return Battery;
+    default: return Square;
+  }
+};
+function DraggableComponent({ component }: { component: ComponentDefinition }) {
   const [{ isDragging }, dragRef] = useDrag(() => ({
     type: "CIRCUIT_COMPONENT",
-    item: component,
+    item: {
+      type: component.type,
+      name: component.name,
+      value: component.value,
+      footprint: component.footprint,
+      connections: [],
+    },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }));
+  }))
 
-  const Icon = component.icon;
+  const Icon = component.icon
 
   return (
-    <div ref={dragRef} className={`cursor-grab ${isDragging ? "opacity-50" : ""}`}>
+    <div ref={(node) => dragRef(node)} className={`cursor-grab ${isDragging ? "opacity-50" : ""}`}>
       <SidebarMenuItem>
-        <SidebarMenuButton>
+        <SidebarMenuButton className="text-foreground hover:bg-accent hover:text-accent-foreground">
           <Icon className="h-4 w-4" />
-          <span>{component.name}</span>
-          <Badge variant="outline" className="ml-2 text-xs">
-            {component.library}
-          </Badge>
+          <span className="truncate max-w-[120px]">{component.name}</span>
+          {component.value && <span className="ml-auto text-xs text-muted-foreground truncate max-w-[60px]">{component.value}</span>}
+          {component.source && (
+            <Badge variant="outline" className="ml-2 text-xs shrink-0 bg-background text-foreground">
+              {component.source}
+            </Badge>
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     </div>
-  );
+  )
 }
+const COMPONENTS_PER_PAGE = 5;
 
 export default function ComponentSidebar() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>("all");
-  const [components, setComponents] = useState<KicadComponent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeCategory, setActiveCategory] = useState<"basic" | "active" | "measurement" | "all">("all")
+  const { availableComponents, isLoading } = useCircuitComponents()
+  const [localComponents, setLocalComponents] = useState<ComponentDefinition[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
 
   useEffect(() => {
-    const loadComponents = async () => {
-      try {
-        const fetchedComponents = await fetchKicadComponents();
-        setComponents(fetchedComponents);
-      } catch (err) {
-        setError("Failed to load components. Please try again later.");
-        console.error("Component loading error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadComponents();
-  }, []);
+    if (!isLoading && availableComponents.length > 0) {
+      const mappedComponents = availableComponents.map(comp => {
+        const componentSource: "kicad" | "custom" | "api" = "kicad";
+        return {
+          type: comp.type,
+          name: comp.name,
+          icon: getIconForType(comp.type),
+          value: comp.value,
+          footprint: comp.footprint,
+          source: componentSource,
+          description: `${comp.type} component`
+        };
+      });
+      setLocalComponents(mappedComponents);
+    }
+  }, [availableComponents, isLoading]);
 
-  const filteredComponents = useMemo(() => {
-    return components.filter((component) => {
-      const matchesSearch = 
-        component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        component.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (activeCategory === "all") return matchesSearch;
-      
-      const categoryTypes = COMPONENT_CATEGORIES[activeCategory];
-      return matchesSearch && categoryTypes.includes(component.type);
-    });
-  }, [components, searchTerm, activeCategory]);
+  // Reset to first page when search term or category changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, activeCategory]);
 
-  if (error) {
-    return (
-      <Sidebar className="border-r mt-16">
-        <SidebarContent>
-          <div className="p-4 flex items-center gap-2 text-red-500">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
-          </div>
-        </SidebarContent>
-      </Sidebar>
-    );
-  }
+  // Filter components based on search term and active category
+  const filteredComponents = localComponents.filter((component) => {
+    const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+    if (activeCategory === "all") return matchesSearch
+
+    if (activeCategory === "basic") {
+      return matchesSearch && ["resistor", "capacitor", "inductor", "diode"].includes(component.type)
+    }
+
+    if (activeCategory === "active") {
+      return matchesSearch && ["transistor", "ic", "led", "switch"].includes(component.type)
+    }
+
+    if (activeCategory === "measurement") {
+      return matchesSearch && ["voltmeter", "ammeter", "oscilloscope", "power_supply"].includes(component.type)
+    }
+
+    return matchesSearch
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredComponents.length / COMPONENTS_PER_PAGE);
+  const paginatedComponents = filteredComponents.slice(
+    currentPage * COMPONENTS_PER_PAGE,
+    (currentPage + 1) * COMPONENTS_PER_PAGE
+  );
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   return (
-    <Sidebar className="border-r mt-16">
-      <SidebarHeader className="border-b">
-        <div className="p-4">
-          <h2 className="text-lg font-semibold mb-2">Components</h2>
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search components..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+   
+      <Sidebar className="border-r mt-16 bg-background text-foreground">
+        <SidebarHeader className="border-b bg-background">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold mb-2">Components</h2>
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search components..."
+                className="pl-8 bg-background text-foreground"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <div className="p-2 flex flex-wrap gap-1">
-          <Button
-            variant={activeCategory === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveCategory("all")}
-            className="flex-1"
-          >
-            All
-          </Button>
-          {Object.keys(COMPONENT_CATEGORIES).map((category) => (
+        </SidebarHeader>
+  
+        <SidebarContent className="bg-background">
+          <div className="p-2 flex flex-wrap gap-1">
             <Button
-              key={category}
-              variant={activeCategory === category ? "default" : "outline"}
+              variant={activeCategory === "all" ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveCategory(category as CategoryKey)}
-              className="flex-1 capitalize"
+              onClick={() => setActiveCategory("all")}
+              className="flex-1"
             >
-              {category}
+              All
             </Button>
-          ))}
-        </div>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between">
-            <span>Components</span>
-            <Badge variant="outline" className="text-xs">
-              {filteredComponents.length}
-            </Badge>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {loading ? (
-                <div className="text-sm text-muted-foreground p-4 text-center">
-                  Loading components from KiCad libraries...
+            <Button
+              variant={activeCategory === "basic" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveCategory("basic")}
+              className="flex-1"
+            >
+              Basic
+            </Button>
+            <Button
+              variant={activeCategory === "active" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveCategory("active")}
+              className="flex-1"
+            >
+              Active
+            </Button>
+            <Button
+              variant={activeCategory === "measurement" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveCategory("measurement")}
+              className="flex-1"
+            >
+              Measurement
+            </Button>
+          </div>
+  
+          <SidebarSeparator />
+  
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center justify-between bg-background text-foreground">
+              <span>Components</span>
+              <Badge variant="outline" className="text-xs bg-background text-foreground">
+                {filteredComponents.length}
+              </Badge>
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="bg-background">
+              <SidebarMenu>
+                {isLoading ? (
+                  <div className="text-sm text-muted-foreground p-4 text-center">Loading components...</div>
+                ) : paginatedComponents.length > 0 ? (
+                  <>
+                    {paginatedComponents.map((component) => (
+                      <DraggableComponent key={`${component.name}-${component.value}`} component={component} />
+                    ))}
+                    
+                    {/* Pagination Controls */}
+                    {filteredComponents.length > COMPONENTS_PER_PAGE && (
+                      <div className="flex items-center justify-center p-2 mt-2 gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={goToPrevPage} 
+                          disabled={currentPage === 0}
+                          className="w-8 h-8 p-0"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-xs text-foreground">
+                          {currentPage + 1} / {totalPages}
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={goToNextPage} 
+                          disabled={currentPage >= totalPages - 1}
+                          className="w-8 h-8 p-0"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground p-4 text-center">No components match your search.</div>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+  
+          <SidebarSeparator />
+  
+          <SidebarGroup>
+            <SidebarGroupLabel className="flex items-center justify-between bg-background text-foreground">
+              <span>KiCad Components</span>
+              <Badge variant="outline" className="text-xs bg-background text-foreground">
+                Library
+              </Badge>
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="bg-background">
+              <div className="flex flex-col items-center justify-center p-4 text-center">
+                <Layers className="h-8 w-8 text-muted-foreground mb-2" />
+                <div className="text-sm font-medium text-foreground">KiCad Library</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {isLoading ? "Loading KiCad components..." : `${availableComponents.length} components loaded`}
                 </div>
-              ) : filteredComponents.length > 0 ? (
-                filteredComponents.map((component) => (
-                  <DraggableComponent 
-                    key={`${component.name}-${component.library}`} 
-                    component={component} 
-                  />
-                ))
-              ) : (
-                <div className="text-sm text-muted-foreground p-4 text-center">
-                  No components match your search.
-                </div>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  );
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+  )
 }

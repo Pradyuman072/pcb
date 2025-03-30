@@ -7,35 +7,151 @@ import { useDrag } from "react-dnd"
 import { Button } from "@/components/ui/button"
 import { useCircuitComponents } from "./circuit-component-context"
 import {
-  Zap,
-  Battery,
-  Circle,
-  Square,
-  Cpu,
-  ToggleLeft,
-  Lightbulb,
   Trash2,
   RotateCw,
   MoveRight,
   Grid,
   ZoomIn,
   ZoomOut,
+  Search,
+  Layers,
+  Gauge,
+  Wrench,
+  Fan,
+  Power,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-const COMPONENT_ICONS: Record<string, React.ElementType> = {
-  resistor: Zap,
-  capacitor: Battery,
-  inductor: Circle,
-  diode: Zap,
-  transistor: Square,
-  ic: Cpu,
-  led: Lightbulb,
-  switch: ToggleLeft,
-  voltmeter: Zap,
-  ammeter: Circle,
-  power_supply: Battery,
-}
+// Custom icons for electronic components (same as in component-sidebar)
+const Resistor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 12h5" />
+    <path d="M17 12h5" />
+    <rect x="7" y="9" width="10" height="6" rx="2" />
+  </svg>
+);
+
+const Capacitor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M2 12h7" />
+    <path d="M15 12h7" />
+    <path d="M9 6v12" />
+    <path d="M15 6v12" />
+  </svg>
+);
+
+const Diode = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M4 12h6" />
+    <path d="M14 12h6" />
+    <polygon points="10 8 14 12 10 16" />
+    <line x1="14" y1="8" x2="14" y2="16" />
+  </svg>
+);
+
+const Transistor = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="6" />
+    <line x1="12" y1="6" x2="12" y2="2" />
+    <line x1="6" y1="18" x2="6" y2="22" />
+    <line x1="18" y1="18" x2="18" y2="22" />
+  </svg>
+);
+
+const Chip = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="5" y="5" width="14" height="14" rx="2" />
+    <line x1="9" y1="2" x2="9" y2="5" />
+    <line x1="15" y1="2" x2="15" y2="5" />
+    <line x1="9" y1="19" x2="9" y2="22" />
+    <line x1="15" y1="19" x2="15" y2="22" />
+    <line x1="2" y1="9" x2="5" y2="9" />
+    <line x1="2" y1="15" x2="5" y2="15" />
+    <line x1="19" y1="9" x2="22" y2="9" />
+    <line x1="19" y1="15" x2="22" y2="15" />
+  </svg>
+);
+
+const getIconForType = (type: string): React.ElementType => {
+  switch (type) {
+    case "resistor": return Resistor;
+    case "capacitor": return Capacitor;
+    case "inductor": return Circle;
+    case "diode": return Diode;
+    case "transistor": return Transistor;
+    case "ic": return Chip;
+    case "led": return Lightbulb;
+    case "switch": return ToggleLeft;
+    case "voltmeter": return Gauge;
+    case "ammeter": return Gauge;
+    case "oscilloscope": return Gauge;
+    case "power_supply": return Power;
+    case "ground": return Square;
+    case "connector": return Square;
+    case "potentiometer": return Wrench;
+    case "fuse": return Zap;
+    case "relay": return Fan;
+    case "transformer": return Battery;
+    default: return Square;
+  }
+};
 
 const DraggableComponent = React.memo(function DraggableComponent({
   id,
@@ -58,7 +174,7 @@ const DraggableComponent = React.memo(function DraggableComponent({
   onDelete: (id: string) => void
   onMoveToPcb: (id: string) => void
 }) {
-  const Icon = COMPONENT_ICONS[component.type] || Square
+  const Icon = getIconForType(component.type)
 
   const [{ isDragging }, drag] = useDrag(
     () => ({
@@ -174,6 +290,7 @@ const DraggableComponent = React.memo(function DraggableComponent({
   )
 })
 
+// ... [rest of the component remains the same] ...
 export default function SchematicEditor() {
   const {
     schematicComponents,

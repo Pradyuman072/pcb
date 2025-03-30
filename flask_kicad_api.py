@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages")
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
