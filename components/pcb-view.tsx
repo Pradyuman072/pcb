@@ -32,9 +32,8 @@ import mqtt from "mqtt"
 const GRID_SIZE = 64
 const CELL_SIZE = 10
 const PCB_PITCH = 2.54 // mm
-
 const MQTT_CONFIG = {
-  brokerUrl: "mqtt://broker.emqx.io",
+  brokerUrl: "wss://broker.emqx.io:8084/mqtt",
   topics: {
     publish: "esp32/matrix/data",
     subscribe: "esp32/matrix/status",
@@ -44,6 +43,11 @@ const MQTT_CONFIG = {
     clean: true,
     connectTimeout: 4000,
     reconnectPeriod: 1000,
+    protocol: "wss",
+    rejectUnauthorized: false,
+    protocolVersion: 5,
+    keepalive: 60,
+    resubscribe: true
   },
 }
 
@@ -96,63 +100,57 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
 
   // Initialize MQTT connection
   useEffect(() => {
-    const connectToMqtt = async () => {
-      setMqttStatus("connecting")
-      setMqttMessages((prev) => [...prev, "Connecting to MQTT broker..."])
+    const client = mqtt.connect(MQTT_CONFIG.brokerUrl, MQTT_CONFIG.options)
 
-      try {
-        const client = mqtt.connect(MQTT_CONFIG.brokerUrl, MQTT_CONFIG.options)
+    client.on('connect', () => {
+      setMqttStatus('connected')
+      setMqttMessages(prev => [...prev, 'Connected to MQTT broker'])
+      
+      client.subscribe(MQTT_CONFIG.topics.subscribe, { qos: 1 }, (err) => {
+        if (err) {
+          setMqttMessages(prev => [...prev, `Subscription error: ${err.message}`])
+        } else {
+          setMqttMessages(prev => [...prev, `Subscribed to ${MQTT_CONFIG.topics.subscribe}`])
+        }
+      })
+    })
 
-        client.on("connect", () => {
-          setMqttStatus("connected")
-          setMqttMessages((prev) => [...prev, "Connected to MQTT broker"])
+    client.on('error', (err) => {
+      setMqttStatus('disconnected')
+      setMqttMessages(prev => [...prev, `Connection error: ${err.message}`])
+    })
 
-          client.subscribe(MQTT_CONFIG.topics.subscribe, (err) => {
-            if (err) {
-              setMqttMessages((prev) => [...prev, `Subscription error: ${err.message}`])
-            } else {
-              setMqttMessages((prev) => [...prev, `Subscribed to ${MQTT_CONFIG.topics.subscribe}`])
-            }
-          })
-        })
-
-        client.on("error", (err: any) => {
-          setMqttStatus("disconnected")
-          setMqttMessages((prev) => [...prev, `Connection error: ${err.message}`])
-        })
-
-        client.on("message", (topic, message) => {
-          const msg = message.toString()
-          setMqttMessages((prev) => [...prev, `Message on ${topic}: ${msg}`])
-
-          if (topic === MQTT_CONFIG.topics.subscribe && msg.includes("ACK")) {
-            setMqttMessages((prev) => [...prev, "ESP32 acknowledged receipt"])
-          }
-        })
-
-        client.on("close", () => {
-          setMqttStatus("disconnected")
-          setMqttMessages((prev) => [...prev, "Connection closed"])
-        })
-
-        client.on("reconnect", () => {
-          setMqttStatus("connecting")
-          setMqttMessages((prev) => [...prev, "Attempting to reconnect..."])
-        })
-
-        setMqttClient(client)
-      } catch (err) {
-        setMqttStatus("disconnected")
-        setMqttMessages((prev) => [...prev, `Connection failed: ${err instanceof Error ? err.message : String(err)}`])
+    client.on('message', (topic, message) => {
+      const msg = message.toString()
+      setMqttMessages(prev => [...prev, `Message on ${topic}: ${msg}`])
+      
+      if (topic === MQTT_CONFIG.topics.subscribe && msg.includes('ACK')) {
+        setMqttMessages(prev => [...prev, 'ESP32 acknowledged receipt'])
       }
-    }
+    })
 
-    connectToMqtt()
+    client.on('close', () => {
+      setMqttStatus('disconnected')
+      setMqttMessages(prev => [...prev, 'Connection closed'])
+    })
+
+    client.on('reconnect', () => {
+      setMqttStatus('connecting')
+      setMqttMessages(prev => [...prev, 'Attempting to reconnect...'])
+    })
+
+    client.on('offline', () => {
+      setMqttStatus('disconnected')
+      setMqttMessages(prev => [...prev, 'Client went offline'])
+    })
+
+    setMqttClient(client)
 
     return () => {
-      if (mqttClient) {
-        mqttClient.end()
-        setMqttMessages((prev) => [...prev, "Disconnected from MQTT broker"])
+      if (client?.connected) {
+        client.end(true, {}, () => {
+          setMqttMessages(prev => [...prev, 'Disconnected from MQTT broker'])
+        })
       }
     }
   }, [])
@@ -174,20 +172,17 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
       let positionsChanged = false
 
       pcbComponents.forEach((component) => {
-        // Use stored position or calculate a new one based on PCB pitch
         const position = componentPositions[component.id] || {
           x: Math.floor((component.x / 2000) * GRID_SIZE),
           y: Math.floor((component.y / 2000) * GRID_SIZE),
         }
 
-        // Snap to grid based on PCB pitch
-        const gridX = Math.round(position.x / 2) * 2 // Snap to every 2 grid cells (5.08mm pitch)
+        const gridX = Math.round(position.x / 2) * 2
         const gridY = Math.round(position.y / 2) * 2
 
         const adjustedX = Math.max(0, Math.min(GRID_SIZE - component.footprint.width, gridX))
         const adjustedY = Math.max(0, Math.min(GRID_SIZE - component.footprint.height, gridY))
 
-        // Place component on grid
         const componentId = pcbComponents.findIndex((c) => c.id === component.id) + 1
 
         for (let j = 0; j < component.footprint.height; j++) {
@@ -201,7 +196,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
           }
         }
 
-        // Place pins
         component.footprint.pins.forEach((pin: any) => {
           const pinX = adjustedX + pin.x
           const pinY = adjustedY + pin.y
@@ -215,7 +209,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
           }
         })
 
-        // Update component positions if changed
         if (
           newComponentPositions[component.id]?.x !== adjustedX ||
           newComponentPositions[component.id]?.y !== adjustedY
@@ -225,7 +218,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
         }
       })
 
-      // Create full matrix representation
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
           const cell = newGrid[y][x]
@@ -239,7 +231,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
         }
       }
 
-      // Only update component positions if they've changed
       if (positionsChanged) {
         setComponentPositions(newComponentPositions)
         setShouldUpdateConnections(true)
@@ -258,12 +249,10 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   const updateConnections = useCallback(() => {
     if (!shouldUpdateConnections) return
 
-    // First, clear all existing connections
     connections.forEach((connection) => {
       removeConnection(connection.id)
     })
 
-    // Then recreate connections based on current component positions
     pcbComponents.forEach((startComponent) => {
       const startPos = componentPositions[startComponent.id]
       if (!startPos) return
@@ -273,7 +262,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
         const endPos = endComponent ? componentPositions[endComponent.id] : null
 
         if (endComponent && endPos) {
-          // Find pins to connect
           const startPin = startComponent.footprint.pins[0]
           const endPin = endComponent.footprint.pins[0]
 
@@ -288,7 +276,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
               y: endPos.y + endPin.y,
             }
 
-            // Add the connection
             addConnection({
               start: startComponent.id,
               end: endComponent.id,
@@ -316,55 +303,89 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
     }
   }, [shouldUpdateConnections, updateConnections])
 
-  // Optimized matrix data sender
+  // Send only the selected component's data
   const sendMatrixData = useCallback(
     (componentName: string) => {
-      if (!mqttClient || mqttStatus !== "connected") {
-        setMqttMessages((prev) => [...prev, "Cannot send - MQTT not connected"])
+      if (!mqttClient || mqttStatus !== 'connected') {
+        setMqttMessages(prev => [...prev, 'Cannot send - MQTT not connected'])
         return false
       }
 
       try {
+        const component = pcbComponents.find(comp => comp.name === componentName)
+        if (!component) {
+          setMqttMessages(prev => [...prev, `Component ${componentName} not found`])
+          return false
+        }
+
+        const position = componentPositions[component.id]
+        if (!position) {
+          setMqttMessages(prev => [...prev, `Position not found for ${componentName}`])
+          return false
+        }
+
+        const componentMatrix = Array(GRID_SIZE)
+          .fill(0)
+          .map(() => Array(GRID_SIZE).fill(0))
+
+        for (let j = 0; j < component.footprint.height; j++) {
+          for (let i = 0; i < component.footprint.width; i++) {
+            const posX = position.x + i
+            const posY = position.y + j
+
+            if (posX >= 0 && posX < GRID_SIZE && posY >= 0 && posY < GRID_SIZE) {
+              componentMatrix[posY][posX] = 3
+            }
+          }
+        }
+
+        component.footprint.pins.forEach((pin: any) => {
+          const pinX = position.x + pin.x
+          const pinY = position.y + pin.y
+
+          if (pinX >= 0 && pinX < GRID_SIZE && pinY >= 0 && pinY < GRID_SIZE) {
+            componentMatrix[pinY][pinX] = pin.type === "positive" ? 1 : 2
+          }
+        })
+
         const payload = {
           component: componentName,
           orientation,
           timestamp: Date.now(),
-          matrix: fullMatrix,
+          matrix: componentMatrix,
         }
 
-        mqttClient.publish(MQTT_CONFIG.topics.publish, JSON.stringify(payload), (err: any) => {
-          if (err) {
-            setMqttMessages((prev) => [...prev, `Failed to send ${componentName}: ${err.message}`])
-            return false
-          } else {
-            setMqttMessages((prev) => [...prev, `Sent ${componentName} to ESP32`])
-            return true
+        mqttClient.publish(
+          MQTT_CONFIG.topics.publish,
+          JSON.stringify(payload),
+          { qos: 1, retain: false },
+          (err) => {
+            if (err) {
+              setMqttMessages(prev => [...prev, `Failed to send ${componentName}: ${err.message}`])
+              return false
+            } else {
+              setMqttMessages(prev => [...prev, `Sent ${componentName} to ESP32`])
+              setSentData(payload)
+              return true
+            }
           }
-        })
+        )
+        return true
       } catch (err) {
-        setMqttMessages((prev) => [
+        setMqttMessages(prev => [
           ...prev,
           `Error preparing payload: ${err instanceof Error ? err.message : String(err)}`,
         ])
         return false
       }
     },
-    [mqttClient, mqttStatus, orientation, fullMatrix],
+    [mqttClient, mqttStatus, orientation, pcbComponents, componentPositions, MQTT_CONFIG.topics.publish]
   )
 
   const sendCurrentComponent = () => {
     if (currentComponent >= 0 && currentComponent < pcbComponents.length) {
       const component = pcbComponents[currentComponent]
-      const success = sendMatrixData(component.name)
-
-      if (success) {
-        setSentData({
-          componentName: component.name,
-          orientation,
-          matrix: fullMatrix,
-          timestamp: Date.now(),
-        })
-      }
+      sendMatrixData(component.name)
     }
   }
 
@@ -380,27 +401,17 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
           setProgress(((nextComponent + 1) / pcbComponents.length) * 100)
 
           const component = pcbComponents[nextComponent]
-          const success = sendMatrixData(component.name)
-
-          if (success) {
-            setSentData({
-              componentName: component.name,
-              orientation,
-              matrix: fullMatrix,
-              timestamp: Date.now(),
-            })
-          }
+          sendMatrixData(component.name)
         } else {
           setIsPlaying(false)
           setCurrentComponent(-1)
           setProgress(0)
-          setSentData(null)
         }
       }, speed * 1000)
     }
 
     return () => clearInterval(interval)
-  }, [isPrototyping, isPlaying, currentComponent, pcbComponents, speed, orientation, fullMatrix, sendMatrixData])
+  }, [isPrototyping, isPlaying, currentComponent, pcbComponents, speed, sendMatrixData])
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -423,16 +434,7 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
       setProgress(((nextComponent + 1) / pcbComponents.length) * 100)
 
       const component = pcbComponents[nextComponent]
-      const success = sendMatrixData(component.name)
-
-      if (success) {
-        setSentData({
-          componentName: component.name,
-          orientation,
-          matrix: fullMatrix,
-          timestamp: Date.now(),
-        })
-      }
+      sendMatrixData(component.name)
     } else {
       setCurrentComponent(0)
       setProgress((1 / pcbComponents.length) * 100)
@@ -472,13 +474,10 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
-      // If a component is selected and we're in move mode
       if (selectedComponent && isMovingComponent) {
-        // Let the component move handler handle it
         return
       }
 
-      // Otherwise handle canvas dragging
       setIsDragging(true)
       setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y })
     }
@@ -491,19 +490,15 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
         y: e.clientY - dragStart.y,
       })
     } else if (selectedComponent && isMovingComponent) {
-      // Handle component movement
       const rect = canvasRef.current?.getBoundingClientRect()
       if (!rect) return
 
-      // Calculate new position in grid coordinates
       const x = Math.round((e.clientX - rect.left - panOffset.x) / (CELL_SIZE * zoom))
       const y = Math.round((e.clientY - rect.top - panOffset.y) / (CELL_SIZE * zoom))
 
-      // Snap to PCB grid (every 2 cells for 5.08mm pitch)
       const snappedX = Math.round(x / 2) * 2
       const snappedY = Math.round(y / 2) * 2
 
-      // Update component position
       setComponentPositions((prev) => ({
         ...prev,
         [selectedComponent]: {
@@ -517,7 +512,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   const handleMouseUp = () => {
     setIsDragging(false)
 
-    // If we were moving a component, update the grid
     if (selectedComponent && isMovingComponent) {
       initializeGrid()
       setIsMovingComponent(false)
@@ -585,10 +579,9 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw starry background
-      ctx.fillStyle = "#061530" // Dark blue background
+      ctx.fillStyle = "#061530"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Draw stars
       stars.forEach((star) => {
         ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`
         ctx.beginPath()
@@ -601,11 +594,9 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
       ctx.scale(zoom, zoom)
 
       if (viewMode === "schematic") {
-        // Draw grid for schematic view
-        ctx.strokeStyle = "#334155" // Slate-600
+        ctx.strokeStyle = "#334155"
         ctx.lineWidth = 0.5
 
-        // Draw grid lines based on PCB pitch (every 2 cells = 5.08mm)
         for (let i = 0; i <= GRID_SIZE; i += 2) {
           ctx.beginPath()
           ctx.moveTo(i * CELL_SIZE, 0)
@@ -650,14 +641,11 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
           }
         }
       } else {
-        // Draw perfboard background for realistic view
-        ctx.fillStyle = "#0D5C2E" // Dark green perfboard
+        ctx.fillStyle = "#0D5C2E"
         ctx.fillRect(0, 0, GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE)
 
-        // Draw perfboard holes
-        ctx.fillStyle = "#0A4A25" // Darker green for holes
+        ctx.fillStyle = "#0A4A25"
         for (let i = 0; i <= GRID_SIZE; i += 2) {
-          // Every 2 cells = 5.08mm pitch
           for (let j = 0; j <= GRID_SIZE; j += 2) {
             ctx.beginPath()
             ctx.arc(i * CELL_SIZE, j * CELL_SIZE, 1.5, 0, Math.PI * 2)
@@ -672,7 +660,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
 
               if (cell !== 0) {
                 if (cell === -1) {
-                  // Positive pin
                   ctx.fillStyle = "#C0FFC0"
                   ctx.beginPath()
                   ctx.arc(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2, 0, Math.PI * 2)
@@ -688,7 +675,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                   ctx.arc(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 6, 0, Math.PI * 2)
                   ctx.fill()
                 } else if (cell === -2) {
-                  // Negative pin
                   ctx.fillStyle = "#FFC0C0"
                   ctx.beginPath()
                   ctx.arc(x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2, CELL_SIZE / 2, 0, Math.PI * 2)
@@ -711,7 +697,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                     componentIndex < pcbComponents.length &&
                     pcbComponents[componentIndex].id === selectedComponent
 
-                  // Component body
                   ctx.fillStyle = isHighlighted ? "#A0FFC0" : isSelected ? "#A0C0FF" : "#FFFFFF"
                   ctx.fillRect(x * CELL_SIZE - 1, y * CELL_SIZE - 1, CELL_SIZE + 2, CELL_SIZE + 2)
 
@@ -734,8 +719,7 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
           }
         }
 
-        // Draw connections between components
-        ctx.strokeStyle = "#F0C000" // Gold color for traces
+        ctx.strokeStyle = "#F0C000"
         ctx.lineWidth = 2
 
         connections.forEach((connection) => {
@@ -756,21 +740,16 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                 const endX = (endPos.x + endPin.x) * CELL_SIZE + CELL_SIZE / 2
                 const endY = (endPos.y + endPin.y) * CELL_SIZE + CELL_SIZE / 2
 
-                // Draw connection path with right angles (Manhattan routing)
                 ctx.beginPath()
                 ctx.moveTo(startX, startY)
 
-                // Determine routing path - use horizontal then vertical or vertical then horizontal
                 const midX = (startX + endX) / 2
                 const midY = (startY + endY) / 2
 
-                // Choose routing based on component positions
                 if (Math.abs(startX - endX) > Math.abs(startY - endY)) {
-                  // Route horizontally first, then vertically
                   ctx.lineTo(midX, startY)
                   ctx.lineTo(midX, endY)
                 } else {
-                  // Route vertically first, then horizontally
                   ctx.lineTo(startX, midY)
                   ctx.lineTo(endX, midY)
                 }
@@ -785,7 +764,6 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
 
       ctx.restore()
 
-      // Draw zoom indicator
       ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
       ctx.fillRect(10, 10, 60, 24)
       ctx.fillStyle = "#ffffff"
@@ -881,8 +859,7 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
             onClick={handleCanvasClick}
           />
 
-          {/* Component selection overlay */}
-          {pcbComponents.map((component, index) => {
+          {pcbComponents.map((component) => {
             const position = componentPositions[component.id]
             if (!position) return null
 
@@ -901,12 +878,9 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                 onMouseDown={
                   isMovingComponent && selectedComponent === component.id
                     ? (e) => e.stopPropagation()
-                    : // Prevent canvas drag when moving
-                      (e) => handleStartMoving(component.id, e)
+                    : (e) => handleStartMoving(component.id, e)
                 }
-              >
-                {/* Invisible overlay for component interaction */}
-              </div>
+              />
             )
           })}
         </div>
@@ -946,232 +920,233 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                   </Button>
 
                   <Button variant="outline" size="icon" onClick={handlePlayPause} disabled={pcbComponents.length === 0}>
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
+                    {isPlaying ? <Pause className="h-4"/>:<Play className="h-4"/>
+                    }
 
-                  <Button variant="outline" size="icon" onClick={handleNext} disabled={pcbComponents.length === 0}>
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="default"
-                    onClick={sendCurrentComponent}
-                    disabled={currentComponent < 0 || currentComponent >= pcbComponents.length}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Current
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Progress</span>
-                    <span className="text-sm">{Math.round(progress)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Speed</span>
-                    <span className="text-sm">{speed}s per component</span>
-                  </div>
-                  <Slider min={0.5} max={5} step={0.5} value={[speed]} onValueChange={(value) => setSpeed(value[0])} />
-                </div>
-              </div>
-
-              <ScrollArea className="h-60">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-4">
-                  {pcbComponents.map((component, index) => (
-                    <Card
-                      key={component.id}
-                      className={`cursor-pointer transition-all hover:border-primary ${currentComponent === index ? "border-primary bg-primary/5" : ""}`}
-                      onClick={() => setCurrentComponent(index)}
-                    >
-                      <CardHeader className="py-2 px-3 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm">{component.name}</CardTitle>
-                        <Badge variant={currentComponent === index ? "default" : "outline"} className="text-xs">
-                          {index + 1}/{pcbComponents.length}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="py-2 px-3">
-                        <div className="text-xs text-muted-foreground">
-                          {component.value && <div>Value: {component.value}</div>}
-                          <div>
-                            Size: {component.footprint.width}x{component.footprint.height}
-                          </div>
-                          <div>Pins: {component.footprint.pins.length}</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="data">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Data Transmission</h3>
-                    <p className="text-sm text-muted-foreground">View the data being sent to the ESP32</p>
-                  </div>
-
-                  {sentData && (
-                    <Button variant="outline" size="sm" onClick={clearSentData}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Data
                     </Button>
-                  )}
-                </div>
 
-                <Card>
-                  <CardHeader className="py-2 px-3">
-                    <CardTitle className="text-sm">MQTT Connection</CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2 px-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">Status:</div>
-                      <Badge
-                        variant={
-                          mqttStatus === "connected"
-                            ? "default"
-                            : mqttStatus === "connecting"
-                              ? "outline"
-                              : "destructive"
-                        }
-                      >
-                        {mqttStatus === "connecting" && <RefreshCw className="h-3 w-3 mr-1 animate-spin" />}
-                        {mqttStatus === "connected" && <Check className="h-3 w-3 mr-1" />}
-                        {mqttStatus}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 border rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
-                      {mqttMessages.length > 0 ? (
-                        mqttMessages.map((message, index) => (
-                          <div key={index} className="text-muted-foreground">
-                            {message}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-muted-foreground">No MQTT messages yet</div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+<Button variant="outline" size="icon" onClick={handleNext} disabled={pcbComponents.length === 0}>
+  <SkipForward className="h-4 w-4" />
+</Button>
 
-                {sentData ? (
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4 pr-4">
-                      <Card>
-                        <CardHeader className="py-2 px-3">
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-sm">Component Data</CardTitle>
-                            <Badge variant="outline" className="text-xs">
-                              {new Date(sentData.timestamp).toLocaleTimeString()}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <div className="font-medium">Name:</div>
-                              <div>{sentData.componentName}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium">Orientation:</div>
-                              <div>{sentData.orientation === 1 ? "Normal" : "Rotated"}</div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="font-medium">Data Type:</div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">JSON</Badge>
-                                <Badge variant="outline">Binary Matrix</Badge>
-                                <Badge variant="default">MQTT Payload</Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+<Button
+  variant="default"
+  onClick={sendCurrentComponent}
+  disabled={currentComponent < 0 || currentComponent >= pcbComponents.length}
+>
+  <Send className="h-4 w-4 mr-2" />
+  Send Current
+</Button>
+</div>
+</div>
 
-                      <Card>
-                        <CardHeader className="py-2 px-3">
-                          <CardTitle className="text-sm">Matrix Representation (64x64)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3">
-                          <div className="bg-muted p-2 rounded-md overflow-x-auto">
-                            <p className="text-xs mb-2">
-                              The matrix is 64x64 in size. Showing a preview of the first 10x10 elements:
-                            </p>
-                            <pre className="text-xs">
-                              {sentData.matrix
-                                .slice(0, 10)
-                                .map((row) => row.slice(0, 10).join(" "))
-                                .join("\n")}
-                              {"\n..."}
-                            </pre>
-                          </div>
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-gray-500 mr-2"></div>
-                              <span>0: Empty</span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-green-500 mr-2"></div>
-                              <span>1: Positive Terminal</span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-red-500 mr-2"></div>
-                              <span>2: Negative Terminal</span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-gray-800 mr-2"></div>
-                              <span>3: Component Body</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<div className="flex justify-between mb-1">
+  <span className="text-sm">Progress</span>
+  <span className="text-sm">{Math.round(progress)}%</span>
+</div>
+<Progress value={progress} className="h-2" />
+</div>
 
-                      <Card>
-                        <CardHeader className="py-2 px-3">
-                          <CardTitle className="text-sm">JSON Payload</CardTitle>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3">
-                          <div className="bg-muted p-2 rounded-md overflow-x-auto">
-                            <pre className="text-xs">
-                              {JSON.stringify(
-                                {
-                                  component: sentData.componentName,
-                                  orientation: sentData.orientation,
-                                  timestamp: sentData.timestamp,
-                                  matrix: "[[...]]", // Truncated for display
-                                },
-                                null,
-                                2,
-                              )}
-                            </pre>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </ScrollArea>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-8 border rounded-md">
-                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Data Transmitted</h3>
-                    <p className="text-sm text-muted-foreground text-center">
-                      Send a component to the ESP32 to see the data transmission details here.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+<div>
+<div className="flex justify-between mb-1">
+  <span className="text-sm">Speed</span>
+  <span className="text-sm">{speed}s per component</span>
+</div>
+<Slider min={0.5} max={5} step={0.5} value={[speed]} onValueChange={(value) => setSpeed(value[0])} />
+</div>
+</div>
+
+<ScrollArea className="h-60">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-4">
+{pcbComponents.map((component, index) => (
+  <Card
+    key={component.id}
+    className={`cursor-pointer transition-all hover:border-primary ${currentComponent === index ? "border-primary bg-primary/5" : ""}`}
+    onClick={() => setCurrentComponent(index)}
+  >
+    <CardHeader className="py-2 px-3 flex flex-row items-center justify-between">
+      <CardTitle className="text-sm">{component.name}</CardTitle>
+      <Badge variant={currentComponent === index ? "default" : "outline"} className="text-xs">
+        {index + 1}/{pcbComponents.length}
+      </Badge>
+    </CardHeader>
+    <CardContent className="py-2 px-3">
+      <div className="text-xs text-muted-foreground">
+        {component.value && <div>Value: {component.value}</div>}
+        <div>
+          Size: {component.footprint.width}x{component.footprint.height}
         </div>
-      )}
-    </div>
-  )
-}
+        <div>Pins: {component.footprint.pins.length}</div>
+      </div>
+    </CardContent>
+  </Card>
+))}
+</div>
+</ScrollArea>
+</TabsContent>
 
+<TabsContent value="data">
+<div className="space-y-4">
+<div className="flex items-center justify-between">
+<div>
+  <h3 className="font-medium">Data Transmission</h3>
+  <p className="text-sm text-muted-foreground">View the data being sent to the ESP32</p>
+</div>
+
+{sentData && (
+  <Button variant="outline" size="sm" onClick={clearSentData}>
+    <Trash2 className="h-4 w-4 mr-2" />
+    Clear Data
+  </Button>
+)}
+</div>
+
+<Card>
+<CardHeader className="py-2 px-3">
+  <CardTitle className="text-sm">MQTT Connection</CardTitle>
+</CardHeader>
+<CardContent className="py-2 px-3">
+  <div className="flex items-center justify-between">
+    <div className="text-sm">Status:</div>
+    <Badge
+      variant={
+        mqttStatus === "connected"
+          ? "default"
+          : mqttStatus === "connecting"
+            ? "outline"
+            : "destructive"
+      }
+    >
+      {mqttStatus === "connecting" && <RefreshCw className="h-3 w-3 mr-1 animate-spin" />}
+      {mqttStatus === "connected" && <Check className="h-3 w-3 mr-1" />}
+      {mqttStatus}
+    </Badge>
+  </div>
+  <div className="mt-2 border rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1">
+    {mqttMessages.length > 0 ? (
+      mqttMessages.map((message, index) => (
+        <div key={index} className="text-muted-foreground">
+          {message}
+        </div>
+      ))
+    ) : (
+      <div className="text-muted-foreground">No MQTT messages yet</div>
+    )}
+  </div>
+</CardContent>
+</Card>
+
+{sentData ? (
+<ScrollArea className="h-[400px]">
+  <div className="space-y-4 pr-4">
+    <Card>
+      <CardHeader className="py-2 px-3">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-sm">Component Data</CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {new Date(sentData.timestamp).toLocaleTimeString()}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="py-2 px-3">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <div className="font-medium">Name:</div>
+            <div>{sentData.componentName}</div>
+          </div>
+          <div>
+            <div className="font-medium">Orientation:</div>
+            <div>{sentData.orientation === 1 ? "Normal" : "Rotated"}</div>
+          </div>
+          <div className="col-span-2">
+            <div className="font-medium">Data Type:</div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">JSON</Badge>
+              <Badge variant="outline">Binary Matrix</Badge>
+              <Badge variant="default">MQTT Payload</Badge>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader className="py-2 px-3">
+        <CardTitle className="text-sm">Matrix Representation (64x64)</CardTitle>
+      </CardHeader>
+      <CardContent className="py-2 px-3">
+        <div className="bg-muted p-2 rounded-md overflow-x-auto">
+          <p className="text-xs mb-2">
+            The matrix is 64x64 in size. Showing a preview of the first 10x10 elements:
+          </p>
+          <pre className="text-xs">
+            {sentData.matrix
+              .slice(0, 10)
+              .map((row) => row.slice(0, 10).join(" "))
+              .join("\n")}
+            {"\n..."}
+          </pre>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-gray-500 mr-2"></div>
+            <span>0: Empty</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-green-500 mr-2"></div>
+            <span>1: Positive Terminal</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-red-500 mr-2"></div>
+            <span>2: Negative Terminal</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-3 h-3 bg-gray-800 mr-2"></div>
+            <span>3: Component Body</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader className="py-2 px-3">
+        <CardTitle className="text-sm">JSON Payload</CardTitle>
+      </CardHeader>
+      <CardContent className="py-2 px-3">
+        <div className="bg-muted p-2 rounded-md overflow-x-auto">
+          <pre className="text-xs">
+            {JSON.stringify(
+              {
+                component: sentData.componentName,
+                orientation: sentData.orientation,
+                timestamp: sentData.timestamp,
+                matrix: "[[...]]", // Truncated for display
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+</ScrollArea>
+) : (
+<div className="flex flex-col items-center justify-center p-8 border rounded-md">
+  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+  <h3 className="text-lg font-medium mb-2">No Data Transmitted</h3>
+  <p className="text-sm text-muted-foreground text-center">
+    Send a component to the ESP32 to see the data transmission details here.
+  </p>
+</div>
+)}
+</div>
+</TabsContent>
+</Tabs>
+</div>
+)}
+</div>
+)
+}

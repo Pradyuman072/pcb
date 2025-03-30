@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDrag } from "react-dnd"
 import {
   Sidebar,
@@ -18,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { CircuitComponent, ComponentType } from "./circuit-component-context"
+import type {  ComponentType } from "./circuit-component-context"
 import { useCircuitComponents } from "./circuit-component-context"
 import { Zap, Battery, Circle, Square, Cpu, ToggleLeft, Lightbulb, Search, Layers } from "lucide-react"
 
@@ -27,167 +26,34 @@ interface ComponentDefinition {
   name: string
   icon: React.ElementType
   value?: string
-  footprint: CircuitComponent["footprint"]
+  footprint: {
+    width: number
+    height: number
+    pins: {
+      x: number
+      y: number
+      type: "positive" | "negative" | "other"
+    }[]
+  }
   source?: "kicad" | "custom" | "api"
   description?: string
 }
 
-const CIRCUIT_COMPONENTS: ComponentDefinition[] = [
-  {
-    type: "resistor",
-    name: "Resistor",
-    icon: Zap,
-    value: "1kΩ",
-    footprint: {
-      width: 2,
-      height: 1,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "capacitor",
-    name: "Capacitor",
-    icon: Battery,
-    value: "10μF",
-    footprint: {
-      width: 1,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 0, y: 1, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "inductor",
-    name: "Inductor",
-    icon: Circle,
-    value: "10mH",
-    footprint: {
-      width: 2,
-      height: 1,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "diode",
-    name: "Diode",
-    icon: Zap,
-    footprint: {
-      width: 1,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 0, y: 1, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "transistor",
-    name: "Transistor",
-    icon: Square,
-    footprint: {
-      width: 2,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-        { x: 0, y: 1, type: "other" },
-      ],
-    },
-  },
-  {
-    type: "ic",
-    name: "Integrated Circuit",
-    icon: Cpu,
-    footprint: {
-      width: 4,
-      height: 3,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-        { x: 2, y: 0, type: "other" },
-        { x: 3, y: 0, type: "other" },
-        { x: 0, y: 2, type: "other" },
-        { x: 1, y: 2, type: "other" },
-        { x: 2, y: 2, type: "other" },
-        { x: 3, y: 2, type: "other" },
-      ],
-    },
-  },
-  {
-    type: "led",
-    name: "LED",
-    icon: Lightbulb,
-    footprint: {
-      width: 1,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 0, y: 1, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "switch",
-    name: "Switch",
-    icon: ToggleLeft,
-    footprint: {
-      width: 2,
-      height: 1,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "voltmeter",
-    name: "Voltmeter",
-    icon: Zap,
-    footprint: {
-      width: 2,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "ammeter",
-    name: "Ammeter",
-    icon: Circle,
-    footprint: {
-      width: 2,
-      height: 2,
-      pins: [
-        { x: 0, y: 0, type: "positive" },
-        { x: 1, y: 0, type: "negative" },
-      ],
-    },
-  },
-  {
-    type: "power_supply",
-    name: "Power Supply 5V",
-    icon: Battery,
-    value: "5V",
-    footprint: {
-      width: 2,
-      height: 2,
-      pins: [
-        { x: 0, y: 1, type: "positive" },
-        { x: 1, y: 1, type: "negative" },
-      ],
-    },
-  },
-]
+const ICON_MAP: Record<string, React.ElementType> = {
+  resistor: Zap,
+  capacitor: Battery,
+  inductor: Circle,
+  diode: Zap,
+  transistor: Square,
+  ic: Cpu,
+  led: Lightbulb,
+  switch: ToggleLeft,
+  voltmeter: Zap,
+  ammeter: Circle,
+  power_supply: Battery,
+  connector: Layers,
+  other: Layers
+}
 
 function DraggableComponent({ component }: { component: ComponentDefinition }) {
   const [{ isDragging }, dragRef] = useDrag(() => ({
@@ -227,11 +93,67 @@ function DraggableComponent({ component }: { component: ComponentDefinition }) {
 export default function ComponentSidebar() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeCategory, setActiveCategory] = useState<"basic" | "active" | "measurement" | "all">("all")
+  const [kicadComponents, setKicadComponents] = useState<ComponentDefinition[]>([])
+  const [loading, setLoading] = useState(true)
   const { availableComponents } = useCircuitComponents()
 
+  useEffect(() => {
+    const fetchKicadComponents = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/symbols-with-footprints')
+        const data = await response.json()
+        
+        if (data.success) {
+          const components = data.symbols.map((symbol: any) => {
+            // Use footprint data if available, otherwise fall back to symbol data
+            const footprintData = symbol.footprint 
+              ? {
+                  width: symbol.footprint.width / 10, // Scale down for UI
+                  height: symbol.footprint.height / 10, // Scale down for UI
+                  pins: symbol.pins.map((pin: any) => ({
+                    x: pin.x / 10,
+                    y: pin.y / 10,
+                    type: pin.type === "power_in" ? "positive" : 
+                         pin.type === "power_out" ? "negative" : "other"
+                  }))
+                }
+              : {
+                  width: 2, // Default fallback width
+                  height: 2, // Default fallback height
+                  pins: symbol.pins.map((pin: any) => ({
+                    x: pin.x / 10,
+                    y: pin.y / 10,
+                    type: pin.type === "power_in" ? "positive" : 
+                         pin.type === "power_out" ? "negative" : "other"
+                  }))
+                }
+
+            return {
+              type: symbol.type as ComponentType,
+              name: symbol.name,
+              icon: ICON_MAP[symbol.type] || Layers,
+              value: symbol.metadata.value,
+              footprint: footprintData,
+              source: "kicad",
+              description: symbol.metadata.description
+            }
+          })
+          setKicadComponents(components)
+        }
+      } catch (error) {
+        console.error("Failed to fetch KiCad components:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchKicadComponents()
+  }, [])
+
   // Filter components based on search term and active category
-  const filteredComponents = CIRCUIT_COMPONENTS.filter((component) => {
-    const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredComponents = kicadComponents.filter((component) => {
+    const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         component.description?.toLowerCase().includes(searchTerm.toLowerCase())
 
     if (activeCategory === "all") return matchesSearch
 
@@ -314,8 +236,12 @@ export default function ComponentSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredComponents.length > 0 ? (
-                filteredComponents.map((component) => <DraggableComponent key={component.name} component={component} />)
+              {loading ? (
+                <div className="text-sm text-muted-foreground p-4 text-center">Loading components...</div>
+              ) : filteredComponents.length > 0 ? (
+                filteredComponents.map((component) => (
+                  <DraggableComponent key={`${component.name}-${component.type}`} component={component} />
+                ))
               ) : (
                 <div className="text-sm text-muted-foreground p-4 text-center">No components match your search.</div>
               )}
@@ -336,7 +262,9 @@ export default function ComponentSidebar() {
             <div className="flex flex-col items-center justify-center p-4 text-center">
               <Layers className="h-8 w-8 text-muted-foreground mb-2" />
               <div className="text-sm font-medium">KiCad Library</div>
-              <div className="text-xs text-muted-foreground mt-1">KiCad components will appear here when connected</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {loading ? "Connecting..." : `${kicadComponents.length} components loaded`}
+              </div>
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -344,4 +272,3 @@ export default function ComponentSidebar() {
     </Sidebar>
   )
 }
-
