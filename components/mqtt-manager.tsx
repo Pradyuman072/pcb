@@ -1,51 +1,153 @@
+// mqtt-manager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
 import { useCircuitComponents } from "./circuit-component-context"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Check } from "lucide-react"
+import { Loader2, Check, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import mqtt from "mqtt"
+
+const MQTT_CONFIG = {
+  brokerUrl: "mqtt://broker.emqx.io",
+  topics: {
+    publish: "esp32/matrix/data",
+    subscribe: "esp32/matrix/status",
+  },
+  options: {
+    clientId: `web-client-${Math.random().toString(16).substr(2, 8)}`,
+    clean: true,
+    connectTimeout: 4000,
+    reconnectPeriod: 1000,
+  },
+}
 
 export default function MqttManager() {
   const { pcbComponents } = useCircuitComponents()
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected")
   const [messages, setMessages] = useState<string[]>([])
   const [sentComponents, setSentComponents] = useState<string[]>([])
+  const [client, setClient] = useState<mqtt.MqttClient | null>(null)
 
-  // Simulate MQTT connection and send components when connected
+  // Initialize MQTT connection
   useEffect(() => {
-    setStatus("connecting")
+    const connectToMqtt = async () => {
+      setStatus("connecting")
+      setMessages((prev) => [...prev, "Connecting to MQTT broker..."])
 
-    const timer = setTimeout(() => {
-      setStatus("connected")
-      setMessages((prev) => [...prev, "Connected to MQTT broker at mqtt://broker.example.com:1883"])
-      setMessages((prev) => [...prev, "Subscribed to topic: esp32/matrix/status"])
-      setMessages((prev) => [...prev, "Publishing to topic: esp32/matrix/data"])
-      
-      // Send components after connection is established
-      if (pcbComponents.length > 0) {
-        sendComponentsToESP32()
+      try {
+        const mqttClient = mqtt.connect(MQTT_CONFIG.brokerUrl, MQTT_CONFIG.options)
+
+        mqttClient.on("connect", () => {
+          setStatus("connected")
+          setMessages((prev) => [...prev, "Connected to MQTT broker"])
+
+          mqttClient.subscribe(MQTT_CONFIG.topics.subscribe, (err) => {
+            if (err) {
+              setMessages((prev) => [...prev, `Subscription error: ${err.message}`])
+            } else {
+              setMessages((prev) => [...prev, `Subscribed to ${MQTT_CONFIG.topics.subscribe}`])
+            }
+          })
+        })
+
+        mqttClient.on("error", (err: any) => {
+          setStatus("disconnected")
+          setMessages((prev) => [...prev, `Connection error: ${err.message}`])
+        })
+
+        mqttClient.on("message", (topic, message) => {
+          const msg = message.toString()
+          setMessages((prev) => [...prev, `Message on ${topic}: ${msg}`])
+
+          if (topic === MQTT_CONFIG.topics.subscribe && msg.includes("ACK")) {
+            setMessages((prev) => [...prev, "ESP32 acknowledged receipt"])
+          }
+        })
+
+        mqttClient.on("close", () => {
+          setStatus("disconnected")
+          setMessages((prev) => [...prev, "Connection closed"])
+        })
+
+        mqttClient.on("reconnect", () => {
+          setStatus("connecting")
+          setMessages((prev) => [...prev, "Attempting to reconnect..."])
+        })
+
+        setClient(mqttClient)
+      } catch (err) {
+        setStatus("disconnected")
+        setMessages((prev) => [...prev, `Connection failed: ${err instanceof Error ? err.message : String(err)}`])
       }
-    }, 2000)
+    }
+
+    connectToMqtt()
 
     return () => {
-      clearTimeout(timer)
-      setStatus("disconnected")
+      if (client) {
+        client.end()
+        setMessages((prev) => [...prev, "Disconnected from MQTT broker"])
+      }
     }
-  }, [pcbComponents])
+  }, [])
 
+  // Send components to ESP32 when connected
+  useEffect(() => {
+    if (status === "connected" && pcbComponents.length > 0) {
+      sendComponentsToESP32()
+    }
+  }, [status, pcbComponents])
+
+  const sendMatrixData = (componentName: string, matrix: number[][]) => {
+    if (!client || status !== "connected") {
+      setMessages((prev) => [...prev, "Cannot send - MQTT not connected"])
+      return false
+    }
+  
+    try {
+      const payload = {
+        component: componentName,
+        timestamp: Date.now(),
+        matrix: matrix,
+      }
+  
+      client.publish(
+        MQTT_CONFIG.topics.publish,
+        JSON.stringify(payload),
+        { qos: 1 }, // Quality of service level 1 (at least once delivery)
+        (err) => {
+          if (err) {
+            setMessages((prev) => [...prev, `Failed to send ${componentName}: ${err.message}`])
+            return false
+          } else {
+            setMessages((prev) => [...prev, `Sent ${componentName} to ESP32`])
+            setSentComponents((prev) => [...prev, componentName])
+            return true
+          }
+        }
+      )
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        `Error preparing payload: ${err instanceof Error ? err.message : String(err)}`,
+      ])
+      return false
+    }
+  }
   const sendComponentsToESP32 = () => {
     pcbComponents.forEach((component) => {
-      const componentName = component.name || `Component ${component.id}`
-      const message = `Sending component ${componentName} to ESP32`
+      // Create a simple matrix representation for the component
+      const matrix = Array(64).fill(0).map(() => Array(64).fill(0))
       
-      setMessages((prev) => [...prev, message])
-      setSentComponents((prev) => [...prev, componentName])
+      // Mark component position (simplified for demo)
+      matrix[32][32] = 1 // Center point
+      
+      const success = sendMatrixData(component.name, matrix)
 
-      // Simulate sending data to ESP32
-      setTimeout(() => {
-        setMessages((prev) => [...prev, `Received acknowledgment from ESP32: ${componentName} data received`])
-      }, 500)
+      if (success) {
+        setMessages((prev) => [...prev, `Prepared ${component.name} for transmission`])
+      }
     })
   }
 
@@ -60,7 +162,7 @@ export default function MqttManager() {
         </Badge>
       </div>
 
-      <Alert variant="outline" className="py-2">
+      <Alert variant="destructive" className="py-2">
         <AlertDescription className="text-xs">
           ESP32 is listening on topic: <span className="font-mono">esp32/matrix/data</span>
         </AlertDescription>
@@ -91,7 +193,30 @@ export default function MqttManager() {
           ) : (
             <div className="text-muted-foreground">No components sent yet</div>
           )}
+
         </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+  <div className="flex items-center">
+    <div className="w-3 h-3 bg-gray-500 mr-2"></div>
+    <span>0: Empty</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-3 h-3 bg-green-500 mr-2"></div>
+    <span>1: Positive Terminal</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-3 h-3 bg-red-500 mr-2"></div>
+    <span>2: Negative Terminal</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-3 h-3 bg-yellow-500 mr-2"></div>
+    <span>3: Other Pins</span>
+  </div>
+  <div className="flex items-center">
+    <div className="w-3 h-3 bg-gray-800 mr-2"></div>
+    <span>4: Component Body</span>
+  </div>
+</div>
       </div>
     </div>
   )

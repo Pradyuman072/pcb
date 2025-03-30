@@ -13,18 +13,17 @@ import {
   Grid,
   ZoomIn,
   ZoomOut,
-  Search,
-  Layers,
-  Gauge,
-  Wrench,
-  Fan,
-  Power,
-  ChevronLeft,
-  ChevronRight
+  Circle,
+  Square,
+  Cpu,
+  ToggleLeft,
+  Lightbulb,
+  Battery,
+  Zap
 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-// Custom icons for electronic components (same as in component-sidebar)
+// Custom icons for electronic components
 const Resistor = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -104,31 +103,6 @@ const Transistor = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const Chip = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <rect x="5" y="5" width="14" height="14" rx="2" />
-    <line x1="9" y1="2" x2="9" y2="5" />
-    <line x1="15" y1="2" x2="15" y2="5" />
-    <line x1="9" y1="19" x2="9" y2="22" />
-    <line x1="15" y1="19" x2="15" y2="22" />
-    <line x1="2" y1="9" x2="5" y2="9" />
-    <line x1="2" y1="15" x2="5" y2="15" />
-    <line x1="19" y1="9" x2="22" y2="9" />
-    <line x1="19" y1="15" x2="22" y2="15" />
-  </svg>
-);
-
 const getIconForType = (type: string): React.ElementType => {
   switch (type) {
     case "resistor": return Resistor;
@@ -136,19 +110,15 @@ const getIconForType = (type: string): React.ElementType => {
     case "inductor": return Circle;
     case "diode": return Diode;
     case "transistor": return Transistor;
-    case "ic": return Chip;
+    case "ic": return Cpu;
     case "led": return Lightbulb;
     case "switch": return ToggleLeft;
-    case "voltmeter": return Gauge;
-    case "ammeter": return Gauge;
-    case "oscilloscope": return Gauge;
-    case "power_supply": return Power;
+    case "voltmeter": return Circle; // Simplified to Circle for schematic
+    case "ammeter": return Circle;   // Simplified to Circle for schematic
+    case "power_supply": return Battery;
     case "ground": return Square;
     case "connector": return Square;
-    case "potentiometer": return Wrench;
     case "fuse": return Zap;
-    case "relay": return Fan;
-    case "transformer": return Battery;
     default: return Square;
   }
 };
@@ -191,27 +161,18 @@ const DraggableComponent = React.memo(function DraggableComponent({
     <div
       ref={drag}
       id={id}
-      className={`absolute flex items-center justify-center p-2 rounded-md cursor-move transition-all ${
+      className={`absolute cursor-move transition-all ${
         isSelected ? "ring-2 ring-primary shadow-md" : ""
       } ${isConnecting ? "ring-2 ring-blue-500 shadow-md" : ""} ${isDragging ? "opacity-50" : ""}`}
       style={{
         left: component.x,
         top: component.y,
         transform: `rotate(${component.rotation}deg)`,
-        backgroundColor: isSelected ? "rgba(59, 130, 246, 0.15)" : "rgba(0, 0, 0, 0.1)",
-        width: "80px",
-        height: "80px",
         zIndex: isSelected ? 10 : 1,
       }}
       onClick={(e) => onSelect(id, e)}
     >
-      <div className="flex flex-col items-center">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background shadow-sm">
-          <Icon className="h-6 w-6 text-primary" />
-        </div>
-        <div className="text-xs mt-1 font-medium">{component.name}</div>
-        {component.value && <div className="text-xs text-muted-foreground">{component.value}</div>}
-      </div>
+      <Icon className="h-10 w-10 text-foreground" />
 
       {isSelected && (
         <TooltipProvider>
