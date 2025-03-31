@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useCircuitComponents } from "./circuit-component-context"
 import { Button } from "@/components/ui/button"
 import { Play, RefreshCw } from "lucide-react"
+import { motion } from "framer-motion"
 
 export default function SimulationView() {
   const { schematicComponents, connections } = useCircuitComponents()
@@ -111,17 +112,26 @@ Rise time: 2.3ms`
     <div className="h-full p-4 flex flex-col">
       <div className="mb-4 flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-semibold mb-2">ngspice Simulation</h2>
+          <h2 className="text-lg font-semibold mb-2 text-primary">ngspice Simulation</h2>
           <p className="text-sm text-muted-foreground">View simulation results for your circuit using ngspice.</p>
         </div>
-        <Button onClick={runSimulation} disabled={isRunning} className="ml-auto">
+        <Button
+          onClick={runSimulation}
+          disabled={isRunning}
+          className="ml-auto bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300"
+        >
           {isRunning ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
           {isRunning ? "Running..." : "Run Simulation"}
         </Button>
       </div>
-      <div className="flex-1 border rounded-md p-4 bg-black text-green-400 font-mono text-sm overflow-auto">
+      <motion.div
+        className="flex-1 border rounded-md p-4 bg-black text-primary font-mono text-sm overflow-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <pre>{simulationOutput || "Preparing simulation..."}</pre>
-      </div>
+      </motion.div>
     </div>
   )
 }

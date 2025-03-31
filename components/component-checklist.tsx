@@ -2,6 +2,7 @@
 
 import { useCircuitComponents } from "./circuit-component-context"
 import { Check, X } from "lucide-react"
+import { motion } from "framer-motion"
 
 export default function ComponentChecklist() {
   const { components, pcbComponents } = useCircuitComponents()
@@ -16,18 +17,27 @@ export default function ComponentChecklist() {
 
   return (
     <div className="space-y-2">
-      {components.map((component) => {
+      {components.map((component, index) => {
         const isInPcb = pcbComponents.some((c) => c.id === component.id)
 
         return (
-          <div key={component.id} className="flex items-center justify-between p-2 rounded-md border">
+          <motion.div
+            key={component.id}
+            className={`flex items-center justify-between p-2 rounded-md border ${
+              isInPcb ? "border-primary/30 bg-primary/5" : "border-muted"
+            } transition-colors duration-300 hover:border-primary/50`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            whileHover={{ scale: 1.02 }}
+          >
             <div className="flex-1 min-w-0">
               <div className="font-medium truncate">{component.name}</div>
               {component.value && <div className="text-xs text-muted-foreground">{component.value}</div>}
             </div>
             <div className="ml-2">
               {isInPcb ? (
-                <div className="flex items-center text-xs text-green-500">
+                <div className="flex items-center text-xs text-primary">
                   <Check className="h-4 w-4 mr-1" />
                   <span>PCB</span>
                 </div>
@@ -38,7 +48,7 @@ export default function ComponentChecklist() {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         )
       })}
     </div>

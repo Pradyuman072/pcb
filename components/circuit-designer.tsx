@@ -19,6 +19,7 @@ import SimulationView from "@/components/simulation-view"
 import DetailedSimulation from "@/components/detailed-simulation"
 import { CircuitBoard, Cpu, Zap, BarChart, HelpCircle, Settings } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function CircuitDesigner() {
   const [activeView, setActiveView] = useState<string>("schematic")
@@ -30,34 +31,39 @@ export default function CircuitDesigner() {
     setIsClient(true)
   }, [])
 
-  const viewButtons = useMemo(() => [
-    {
-      id: "schematic",
-      icon: Zap,
-      label: "Schematic",
-      tooltip: "Design your circuit schematic"
-    },
-    {
-      id: "pcb",
-      icon: CircuitBoard,
-      label: "PCB View",
-      tooltip: "View and edit PCB layout"
-    },
-    ...(isSimulating ? [
+  const viewButtons = useMemo(
+    () => [
       {
-        id: "simulation",
-        icon: Cpu,
-        label: "Basic Simulation",
-        tooltip: "Run basic circuit simulation"
+        id: "schematic",
+        icon: Zap,
+        label: "Schematic",
+        tooltip: "Design your circuit schematic",
       },
       {
-        id: "detailed-simulation",
-        icon: BarChart,
-        label: "Detailed Simulation",
-        tooltip: "View detailed simulation results"
-      }
-    ] : [])
-  ], [isSimulating])
+        id: "pcb",
+        icon: CircuitBoard,
+        label: "PCB View",
+        tooltip: "View and edit PCB layout",
+      },
+      ...(isSimulating
+        ? [
+            {
+              id: "simulation",
+              icon: Cpu,
+              label: "Basic Simulation",
+              tooltip: "Run basic circuit simulation",
+            },
+            {
+              id: "detailed-simulation",
+              icon: BarChart,
+              label: "Detailed Simulation",
+              tooltip: "View detailed simulation results",
+            },
+          ]
+        : []),
+    ],
+    [isSimulating],
+  )
 
   if (!isClient) {
     return null
@@ -66,27 +72,38 @@ export default function CircuitDesigner() {
   return (
     <CircuitComponentProvider>
       <DndProviderWithNoSSR>
-        <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden ">
-          
-          <div className="flex flex-1 overflow-hidden ">
-            <SidebarProvider className="">
-              <ComponentSidebar  />
+        <div className="flex flex-col h-[calc(100vh-4rem)] w-full overflow-hidden">
+          <div className="flex flex-1 overflow-hidden">
+            <SidebarProvider>
+              <ComponentSidebar />
               <div className="flex flex-col flex-1 overflow-hidden">
-                <div className="border-b p-2 md:p-4 flex flex-wrap justify-between items-center gap-2 bg-background">
+                <div className="border-b p-2 md:p-4 flex flex-wrap justify-between items-center gap-2 bg-card/50 backdrop-blur-sm">
                   <TooltipProvider>
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-                      {viewButtons.map((button) => (
+                      {viewButtons.map((button, index) => (
                         <Tooltip key={button.id}>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant={activeView === button.id ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setActiveView(button.id)}
-                              className="flex items-center"
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
                             >
-                              <button.icon className="h-4 w-4 mr-2" />
-                              {button.label}
-                            </Button>
+                              <Button
+                                variant={activeView === button.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setActiveView(button.id)}
+                                className={`flex items-center transition-all duration-300 ${
+                                  activeView === button.id
+                                    ? "bg-primary text-primary-foreground shadow-md"
+                                    : "hover:border-primary/50 hover:text-primary"
+                                }`}
+                              >
+                                <button.icon
+                                  className={`h-4 w-4 mr-2 ${activeView === button.id ? "animate-pulse" : ""}`}
+                                />
+                                {button.label}
+                              </Button>
+                            </motion.div>
                           </TooltipTrigger>
                           <TooltipContent>{button.tooltip}</TooltipContent>
                         </Tooltip>
@@ -96,7 +113,11 @@ export default function CircuitDesigner() {
                     <div className="flex items-center gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 border-primary/30 text-primary hover:bg-primary/20 transition-all duration-300"
+                          >
                             <HelpCircle className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -105,7 +126,11 @@ export default function CircuitDesigner() {
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 border-primary/30 text-primary hover:bg-primary/20 transition-all duration-300"
+                          >
                             <Settings className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -114,7 +139,11 @@ export default function CircuitDesigner() {
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="secondary" onClick={() => setIsSimulating(!isSimulating)}>
+                          <Button
+                            variant="secondary"
+                            onClick={() => setIsSimulating(!isSimulating)}
+                            className="bg-secondary/80 text-secondary-foreground hover:bg-secondary transition-all duration-300"
+                          >
                             {isSimulating ? "Stop Simulation" : "Run Simulation"}
                           </Button>
                         </TooltipTrigger>
@@ -128,6 +157,11 @@ export default function CircuitDesigner() {
                           <Button
                             variant={isPrototyping ? "destructive" : "default"}
                             onClick={() => setIsPrototyping(!isPrototyping)}
+                            className={`transition-all duration-300 ${
+                              isPrototyping
+                                ? "bg-destructive/90 hover:bg-destructive"
+                                : "bg-primary/90 hover:bg-primary"
+                            }`}
                           >
                             {isPrototyping ? "Stop Prototyping" : "Start Prototyping"}
                           </Button>
@@ -141,19 +175,30 @@ export default function CircuitDesigner() {
                 </div>
                 <main className="flex-1 overflow-hidden flex flex-col md:flex-row">
                   <div className="flex-1 overflow-hidden">
-                    {activeView === "schematic" && <SchematicEditor />}
-                    {activeView === "pcb" && <PcbView isPrototyping={isPrototyping} />}
-                    {isSimulating && activeView === "simulation" && <SimulationView />}
-                    {isSimulating && activeView === "detailed-simulation" && <DetailedSimulation />}
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeView}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="h-full"
+                      >
+                        {activeView === "schematic" && <SchematicEditor />}
+                        {activeView === "pcb" && <PcbView isPrototyping={isPrototyping} />}
+                        {isSimulating && activeView === "simulation" && <SimulationView />}
+                        {isSimulating && activeView === "detailed-simulation" && <DetailedSimulation />}
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
-                  <div className="w-full md:w-64 border-t md:border-t-0 md:border-l overflow-auto bg-background">
+                  <div className="w-full md:w-64 border-t md:border-t-0 md:border-l overflow-auto bg-card/30 backdrop-blur-sm">
                     <div className="p-4">
-                      <h2 className="font-semibold mb-2">Components</h2>
+                      <h2 className="font-semibold mb-2 text-primary">Components</h2>
                       <ComponentChecklist />
                     </div>
                     {isPrototyping && (
-                      <div className="p-4 border-t">
-                        <h2 className="font-semibold mb-2">MQTT Status</h2>
+                      <div className="p-4 border-t border-primary/10">
+                        <h2 className="font-semibold mb-2 text-primary">MQTT Status</h2>
                         <MqttManager />
                       </div>
                     )}

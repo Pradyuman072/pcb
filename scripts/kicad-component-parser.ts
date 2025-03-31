@@ -10,12 +10,22 @@ interface Pin {
   type: "positive" | "negative" | "other";
 }
 
+interface Model3D {
+  filename: string;
+  path: string;
+  format: "STEP" | "VRML" | "WRL" | "unknown";
+  scale?: {x: number, y: number, z: number};
+  offset?: {x: number, y: number, z: number};
+  rotation?: {x: number, y: number, z: number};
+}
+
 interface Footprint {
   width: number;
   height: number;
   pins: Pin[];
   svgPath?: string;
   schematicSymbol?: string;
+  model3d?: Model3D; // Add 3D model reference
 }
 
 interface Component {
@@ -36,10 +46,10 @@ interface Component {
 const execPromise = promisify(exec);
 
 // Clone repositories if not exists
-// Clone repositories if not exists
 async function cloneRepositories() {
   const symbolsPath = path.join(__dirname, 'kicad-symbols');
   const footprintsPath = path.join(__dirname, 'kicad-footprints');
+  const packages3dPath = path.join(__dirname, 'kicad-packages3D');
   
   if (!fs.existsSync(symbolsPath)) {
     console.log('Cloning symbols repository...');
@@ -49,6 +59,11 @@ async function cloneRepositories() {
   if (!fs.existsSync(footprintsPath)) {
     console.log('Cloning footprints repository...');
     await execPromise(`git clone https://gitlab.com/kicad/libraries/kicad-footprints.git ${footprintsPath}`);
+  }
+  
+  if (!fs.existsSync(packages3dPath)) {
+    console.log('Cloning 3D packages repository...');
+    await execPromise(`git clone https://gitlab.com/kicad/libraries/kicad-packages3D.git ${packages3dPath}`);
   }
 }
 
@@ -146,7 +161,7 @@ function determineComponentType(name: string): string {
   } else if (lowerName.includes('transformer')) {
     return 'transformer';
   } else {
-    return 'ic'; // Default to IC for unknown components
+    return 'ic'; 
   }
 }
 
@@ -177,7 +192,7 @@ function extractPinsFromSymbol(symbolContent: string): Footprint {
   }
   
   // Generate SVG path for schematic representation
-  const svgPath = generateSchemticSvgFromSymbol(symbolContent);
+  const svgPath = generateSchematicSvgFromSymbol(symbolContent);
   
   return {
     width: Math.max(2, Math.abs(maxX - minX) / 2.54),
@@ -189,7 +204,7 @@ function extractPinsFromSymbol(symbolContent: string): Footprint {
 }
 
 // Generate SVG path from symbol polygons and lines
-function generateSchemticSvgFromSymbol(symbolContent: string): string {
+function generateSchematicSvgFromSymbol(symbolContent: string): string {
   const polylineRegex = /\(polyline\s+\(pts\s+([\s\S]*?)\)\s+\(stroke[^\)]*\)/g;
   const rectRegex = /\(rectangle\s+\(start\s+([^\s]+)\s+([^\s]+)\)\s+\(end\s+([^\s]+)\s+([^\s]+)\)/g;
   
@@ -247,11 +262,55 @@ function addElectricalCharacteristics(component: Component): void {
   }
 }
 
+// Function to scan and index 3D models
+function process3DModels(directory: string): Record<string, Model3D> {
+  const models: Record<string, Model3D> = {};
+  
+  function processDir(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    
+    const files = fs.readdirSync(dir);
+    
+    for (const file of files) {
+      const fullPath = path.join(dir, file);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        processDir(fullPath);
+      } else {
+        const ext = path.extname(file).toLowerCase();
+        if (['.step', '.stp', '.wrl', '.vrml'].includes(ext)) {
+          const basename = path.basename(file, ext);
+          const format = (ext === '.step' || ext === '.stp') ? 'STEP' : 
+                         (ext === '.wrl' || ext === '.vrml') ? 'VRML' : 'unknown';
+          
+          // Normalize the path for storage
+          const relativePath = path.relative(directory, fullPath);
+          
+          models[basename] = {
+            filename: file,
+            path: relativePath,
+            format,
+            scale: {x: 1, y: 1, z: 1},
+            offset: {x: 0, y: 0, z: 0},
+            rotation: {x: 0, y: 0, z: 0}
+          };
+        }
+      }
+    }
+  }
+  
+  processDir(directory);
+  return models;
+}
+
 // Process footprint files to match with symbols
-function parseFootprintFiles(directory: string): Record<string, Partial<Footprint>> {
+function parseFootprintFiles(footprintsDir: string, models3D: Record<string, Model3D>): Record<string, Partial<Footprint>> {
   const footprints: Record<string, Partial<Footprint>> = {};
   
   function processDir(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    
     const files = fs.readdirSync(dir);
     
     for (const file of files) {
@@ -295,16 +354,67 @@ function parseFootprintFiles(directory: string): Record<string, Partial<Footprin
           maxY = Math.max(...pins.map(p => p.y));
         }
         
+        // Create footprint object
         footprints[name] = {
           width: Math.max(2, Math.abs(maxX - minX) / 2.54),
           height: Math.max(2, Math.abs(maxY - minY) / 2.54),
           pins
         };
+        
+        // Extract 3D model references
+        const modelRegex = /\(model\s+"([^"]+)"[^)]*?(\(offset[^)]+\))?[^)]*?(\(scale[^)]+\))?[^)]*?(\(rotate[^)]+\))?/g;
+        
+        while ((match = modelRegex.exec(content)) !== null) {
+          const modelPath = match[1];
+          const modelBasename = path.basename(modelPath, path.extname(modelPath));
+          
+          // Extract offset if specified
+          const offsetMatch = match[2] ? match[2].match(/\(xyz\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\)/) : null;
+          const offset = offsetMatch ? {
+            x: parseFloat(offsetMatch[1]),
+            y: parseFloat(offsetMatch[2]),
+            z: parseFloat(offsetMatch[3])
+          } : {x: 0, y: 0, z: 0};
+          
+          // Extract scale if specified
+          const scaleMatch = match[3] ? match[3].match(/\(xyz\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\)/) : null;
+          const scale = scaleMatch ? {
+            x: parseFloat(scaleMatch[1]),
+            y: parseFloat(scaleMatch[2]),
+            z: parseFloat(scaleMatch[3])
+          } : {x: 1, y: 1, z: 1};
+          
+          // Extract rotation if specified
+          const rotateMatch = match[4] ? match[4].match(/\(xyz\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)\)/) : null;
+          const rotation = rotateMatch ? {
+            x: parseFloat(rotateMatch[1]),
+            y: parseFloat(rotateMatch[2]),
+            z: parseFloat(rotateMatch[3])
+          } : {x: 0, y: 0, z: 0};
+          
+          // Look for the model in our indexed models
+          const matchedModels = Object.entries(models3D)
+            .filter(([modelName]) => 
+              modelName === modelBasename || 
+              modelName.toLowerCase().includes(modelBasename.toLowerCase()));
+          
+          if (matchedModels.length > 0) {
+            const [_, modelData] = matchedModels[0];
+            
+            // Add the model to the footprint
+            footprints[name].model3d = {
+              ...modelData,
+              scale,
+              offset,
+              rotation
+            };
+          }
+        }
       }
     }
   }
   
-  processDir(directory);
+  processDir(footprintsDir);
   return footprints;
 }
 
@@ -315,8 +425,15 @@ async function processKiCadLibraries() {
     
     const symbolsDir = path.join(__dirname, 'kicad-symbols');
     const footprintsDir = path.join(__dirname, 'kicad-footprints');
+    const packages3dDir = path.join(__dirname, 'kicad-packages3D');
     
-    // Process all library files
+    // Process 3D models first
+    console.log('Processing 3D models...');
+    const models3D = process3DModels(packages3dDir);
+    console.log(`Found ${Object.keys(models3D).length} 3D models`);
+    
+    // Process all symbol library files
+    console.log('Processing symbol libraries...');
     const components: Component[] = [];
     const symbolFiles = fs.readdirSync(symbolsDir)
       .filter(file => file.endsWith('.kicad_sym') || file.endsWith('.lib'));
@@ -327,10 +444,13 @@ async function processKiCadLibraries() {
       components.push(...fileComponents);
     }
     
-    // Process footprints
-    const footprints = parseFootprintFiles(footprintsDir);
+    // Process footprints with 3D model information
+    console.log('Processing footprints with 3D model information...');
+    const footprints = parseFootprintFiles(footprintsDir, models3D);
+    console.log(`Processed ${Object.keys(footprints).length} footprints`);
     
-    // Match footprints with components where possible
+    // Match footprints with components
+    console.log('Matching components with footprints and 3D models...');
     for (const component of components) {
       // Simple matching logic - could be improved for production
       const possibleFootprints = Object.entries(footprints)
@@ -341,23 +461,26 @@ async function processKiCadLibraries() {
         const [_, footprint] = possibleFootprints[0];
         
         if (footprint.pins && footprint.pins.length > 0) {
+          // Merge footprint data with existing component footprint
           component.footprint = {
             ...component.footprint,
             width: footprint.width || component.footprint?.width || 2,
             height: footprint.height || component.footprint?.height || 2,
-            pins: footprint.pins
+            pins: footprint.pins,
+            model3d: footprint.model3d // Include the 3D model reference if available
           };
         }
       }
     }
     
     // Write to JSON file
-    fs.writeFileSync(
-      path.join(__dirname, 'component-definitions.json'), 
-      JSON.stringify(components, null, 2)
-    );
+    const outputFile = path.join(__dirname, 'component-definitions.json');
+    fs.writeFileSync(outputFile, JSON.stringify(components, null, 2));
     
-    console.log(`Successfully processed ${components.length} components`);
+    const componentsWithModels = components.filter(c => c.footprint?.model3d).length;
+    console.log(`Successfully processed ${components.length} components (${componentsWithModels} with 3D models)`);
+    console.log(`Output saved to ${outputFile}`);
+    
   } catch (error) {
     console.error('Error processing KiCad libraries:', error);
   }
