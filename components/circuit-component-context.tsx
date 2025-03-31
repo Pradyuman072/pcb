@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import { v4 as uuidv4 } from "uuid"
-
+import { fetchComponentsFromAPI } from "../lib/api-service"
 
 
 
@@ -16,10 +16,10 @@ const fetchComponentData = async (): Promise<Component[]> => {
     const kicadData = await kicadResponse.json();
     
    
-   
+    const apiData = await fetchComponentsFromAPI();
     
    
-    const combined = [...kicadData];
+    const combined = [...kicadData, ...apiData];
     const uniqueComponents = Array.from(new Map(combined.map(item => [item.name, item])).values());
     
     return uniqueComponents.map((item: any) => ({
@@ -50,8 +50,8 @@ const fetchComponentData = async (): Promise<Component[]> => {
   } catch (error) {
     console.error('Error loading component data:', error);
     console.log('Falling back to API data only');
-   
-    return [];
+    const apiData = await fetchComponentsFromAPI();
+    return apiData;
   }
 };
 // Define types
