@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/theme-provider"
 export const metadata: Metadata = {
   title: "Illumitrace - Circuit Design & Simulation",
   description: "Advanced circuit design, PCB layout, and simulation platform",
-  viewport: 'width=device-width, initial-scale=1',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon-16x16.png',
@@ -34,7 +33,7 @@ export default function RootLayout({
               Skip to content
             </a>
             <Navbar />
-            <main id="main-content" className="flex-1 mt-16">
+            <main id="main-content" className="flex-1 ">
               {children}
             </main>
           </div>
