@@ -1,18 +1,8 @@
-/*
- * ESP32 MQTT 64x64 LED Matrix Controller
- * 
- * This code connects an ESP32 to MQTT and controls a 64x64 LED matrix
- * based on the matrix data received from the circuit designer application.
- */
-
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <FastLED.h>
-
-// WiFi credentials
-const char* ssid = "Pradyuman";
-const char* password = "12345678";
+#include <WiFiManager.h>
 
 // MQTT Broker settings
 const char* mqtt_server = "broker.emqx.io";
@@ -23,6 +13,7 @@ const char* mqtt_password = "mqtt_password";
 // MQTT topics
 const char* matrix_data_topic = "esp32/matrix/data";
 const char* matrix_status_topic = "esp32/matrix/status";
+const char* wifi_config_topic = "esp32/wifi/config";
 
 // LED Matrix settings
 const int MATRIX_SIZE = 64;
@@ -34,14 +25,12 @@ uint8_t matrix[MATRIX_SIZE][MATRIX_SIZE] = {0};
 // WiFi and MQTT clients
 WiFiClient espClient;
 PubSubClient client(espClient);
+WiFiManager wm;
 
 // LED matrix pins
-const int DATA_PIN = 5;  // Change to your actual data pin
-
-// LED array for FastLED
+const int DATA_PIN = 5;
 CRGB leds[NUM_LEDS];
 
-// Function prototypes
 void setup_wifi();
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect();
@@ -53,10 +42,16 @@ void setup() {
   
   // Initialize LED matrix
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(50);  // Adjust brightness as needed
+  FastLED.setBrightness(50);
   
-  // Connect to WiFi
-  setup_wifi();
+  // Connect to WiFi using WiFiManager
+  if (!wm.autoConnect("ESP32-Config", "12345678")) {
+    Serial.println("Failed to connect. Restarting...");
+    ESP.restart();
+  }
+  
+  Serial.print("Connected to Wi-Fi: ");
+  Serial.println(WiFi.SSID());
   
   // Set up MQTT client
   client.setServer(mqtt_server, mqtt_port);
@@ -67,36 +62,15 @@ void setup() {
   updateMatrix();
   
   Serial.println("ESP32 LED Matrix Controller initialized");
+  sendStatus("ESP32 initialized with Wi-Fi Manager");
 }
 
 void loop() {
-  // Maintain MQTT connection
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
-  
-  // Other periodic tasks can go here
   delay(10);
-}
-
-void setup_wifi() {
-  delay(10);
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -104,7 +78,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print(topic);
   Serial.print("] ");
   
-  // Create a buffer for the payload
   char message[length + 1];
   for (unsigned int i = 0; i < length; i++) {
     message[i] = (char)payload[i];
@@ -113,10 +86,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
   message[length] = '\0';
   Serial.println();
   
-  // Process matrix data
   if (strcmp(topic, matrix_data_topic) == 0) {
-    // Parse JSON
-    DynamicJsonDocument doc(65536);  // Increased size for 64x64 matrix
+    DynamicJsonDocument doc(65536);
     DeserializationError error = deserializeJson(doc, message);
     
     if (error) {
@@ -126,20 +97,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
       return;
     }
     
-    // Extract component data
     const char* componentName = doc["component"];
-    int orientation = doc["orientation"];
     JsonArray matrixData = doc["matrix"];
     
     Serial.print("Received component: ");
     Serial.println(componentName);
-    Serial.print("Orientation: ");
-    Serial.println(orientation);
     
-    // Clear the matrix first
     memset(matrix, 0, sizeof(matrix));
     
-    // Process matrix data - now using the full 64x64 matrix
     if (matrixData.size() == MATRIX_SIZE) {
       for (int y = 0; y < MATRIX_SIZE; y++) {
         JsonArray row = matrixData[y];
@@ -150,37 +115,56 @@ void callback(char* topic, byte* payload, unsigned int length) {
         }
       }
       
-      // Update the physical LED matrix
       updateMatrix();
-      
-      // Send acknowledgment
-      char statusMsg[100];
-      snprintf(statusMsg, sizeof(statusMsg), "Received component: %s, orientation: %d", 
-               componentName, orientation);
-      sendStatus(statusMsg);
+      sendStatus("ACK: Matrix updated");
     } else {
       sendStatus("Error: Invalid matrix dimensions");
+    }
+  } else if (strcmp(topic, wifi_config_topic) == 0) {
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, message);
+    
+    if (error) {
+      sendStatus("Error: Failed to parse Wi-Fi config");
+      return;
+    }
+    
+    const char* ssid = doc["ssid"];
+    const char* password = doc["password"];
+    
+    if (ssid && strlen(ssid) > 0) {
+      Serial.println("Received new Wi-Fi credentials");
+      WiFi.begin(ssid, password);
+      
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+      }
+      
+      if (WiFi.status() == WL_CONNECTED) {
+        sendStatus("Wi-Fi: Connected to new network");
+        Serial.println("Connected to new Wi-Fi network");
+      } else {
+        sendStatus("Wi-Fi: Failed to connect to new network");
+        Serial.println("Failed to connect to new Wi-Fi network");
+      }
     }
   }
 }
 
 void reconnect() {
-  // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Create a random client ID
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
     
-    // Attempt to connect
     if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
       Serial.println("connected");
-      
-      // Subscribe to topics
       client.subscribe(matrix_data_topic);
-      
-      // Send status message
-      sendStatus("ESP32 LED Matrix Controller connected");
+      client.subscribe(wifi_config_topic);
+      sendStatus("ESP32 reconnected to MQTT");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -193,42 +177,21 @@ void reconnect() {
 void updateMatrix() {
   for (int y = 0; y < MATRIX_SIZE; y++) {
     for (int x = 0; x < MATRIX_SIZE; x++) {
-      int pixelIndex;
-      if (y % 2 == 0) {
-        // Even rows run left to right
-        pixelIndex = y * MATRIX_SIZE + x;
-      } else {
-        // Odd rows run right to left
-        pixelIndex = y * MATRIX_SIZE + (MATRIX_SIZE - 1 - x);
-      }
+      int pixelIndex = y * MATRIX_SIZE + (y % 2 == 0 ? x : MATRIX_SIZE - 1 - x);
       
-      // Set LED color based on matrix value
       switch (matrix[y][x]) {
-        case 0:  // Empty/Off
-          leds[pixelIndex] = CRGB::Black;
-          break;
-        case 1:  // Green for value 1
-          leds[pixelIndex] = CRGB::Green;
-          break;
-        case 2:  // Red for value 2
-          leds[pixelIndex] = CRGB::Red;
-          break;
-        case 3:  // White for component body
-          leds[pixelIndex] = CRGB::White;
-          break;
-        default:  // Other values - blue
-          leds[pixelIndex] = CRGB::Blue;
-          break;
+        case 0: leds[pixelIndex] = CRGB::Black; break;
+        case 1: leds[pixelIndex] = CRGB::Green; break;
+        case 2: leds[pixelIndex] = CRGB::Red; break;
+        case 3: leds[pixelIndex] = CRGB::White; break;
+        default: leds[pixelIndex] = CRGB::Blue; break;
       }
     }
   }
-  
-  // Update the LED matrix
   FastLED.show();
 }
 
 void sendStatus(const char* status) {
-  // Send status message to MQTT
   client.publish(matrix_status_topic, status);
   Serial.print("Status: ");
   Serial.println(status);

@@ -4,33 +4,33 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 222 47% 7%; /* Darker background */
+    --foreground: 210 40% 95%; /* Slightly lighter foreground */
 
-    --card: 222 47% 13%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 47% 10%; /* Darker card background */
+    --card-foreground: 210 40% 95%; /* Slightly lighter card foreground */
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 47% 7%; /* Darker popover background */
+    --popover-foreground: 210 40% 95%; /* Slightly lighter popover foreground */
 
-    --primary: 196 80% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 196 80% 50%; /* Darker primary color */
+    --primary-foreground: 222 47% 9%; /* Darker primary foreground */
 
-    --secondary: 250 70% 65%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 250 70% 60%; /* Darker secondary color */
+    --secondary-foreground: 222 47% 9%; /* Darker secondary foreground */
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0, 0%, 100% /* Darker muted color */
+    --muted-foreground: 215 20% 60%; /* Slightly lighter muted foreground */
 
-    --accent: 250 70% 65%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 250 70% 60%; /* Darker accent color */
+    --accent-foreground: 210 40% 95%; /* Slightly lighter accent foreground */
 
-    --destructive: 0 62% 65%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 60%; /* Darker destructive color */
+    --destructive-foreground: 210 40% 95%; /* Slightly lighter destructive foreground */
 
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 196 80% 60%;
+    --border: 217 33% 25%; /* Darker border color */
+    --input: 217 33% 25%; /* Darker input color */
+    --ring: 196 80% 50%; /* Darker ring color */
 
     --radius: 0.5rem;
   }
@@ -45,13 +45,12 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
-
 .bg-grid-pattern {
-  background-image: linear-gradient(to right, rgba(var(--muted), 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(var(--muted), 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-color: hsl(var(--background));
-}
+    background-image: 
+      linear-gradient(to right, rgba(var(--muted), 0.5) 1px, transparent 1px), /* White grid lines */
+      linear-gradient(to bottom, rgba(var(--muted), 0.5) 1px, transparent 1px); /* White grid lines */
+    background-size: 20px 20px; /* Adjust size as needed */
+  }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -121,4 +120,3 @@
 .circuit-animate {
   animation: circuit-pulse 2s infinite;
 }
-

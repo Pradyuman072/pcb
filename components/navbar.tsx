@@ -198,9 +198,9 @@ export default function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 p-0 border-primary text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
+                className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              > 
+              >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
               <Button

@@ -3,16 +3,18 @@
 import { useState, useEffect } from "react"
 import { useCircuitComponents } from "./circuit-component-context"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Check, AlertCircle } from "lucide-react"
+import { Loader2, Check, AlertCircle, Wifi } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import mqtt from "mqtt"
 import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
 
 const MQTT_CONFIG = {
   brokerUrl: "mqtt://broker.emqx.io",
   topics: {
     publish: "esp32/matrix/data",
     subscribe: "esp32/matrix/status",
+    wifiConfig: "esp32/wifi/config",
   },
   options: {
     clientId: `web-client-${Math.random().toString(16).substr(2, 8)}`,
@@ -28,6 +30,11 @@ export default function MqttManager() {
   const [messages, setMessages] = useState<string[]>([])
   const [sentComponents, setSentComponents] = useState<string[]>([])
   const [client, setClient] = useState<mqtt.MqttClient | null>(null)
+  const [wifiConfig, setWifiConfig] = useState({
+    ssid: "",
+    password: ""
+  })
+  const [showWifiConfig, setShowWifiConfig] = useState(false)
 
   // Initialize MQTT connection
   useEffect(() => {
@@ -60,8 +67,12 @@ export default function MqttManager() {
           const msg = message.toString()
           setMessages((prev) => [...prev, `Message on ${topic}: ${msg}`])
 
-          if (topic === MQTT_CONFIG.topics.subscribe && msg.includes("ACK")) {
-            setMessages((prev) => [...prev, "ESP32 acknowledged receipt"])
+          if (topic === MQTT_CONFIG.topics.subscribe) {
+            if (msg.includes("ACK")) {
+              setMessages((prev) => [...prev, "ESP32 acknowledged receipt"])
+            } else if (msg.includes("Wi-Fi")) {
+              setMessages((prev) => [...prev, `Wi-Fi status: ${msg}`])
+            }
           }
         })
 
@@ -115,7 +126,7 @@ export default function MqttManager() {
       client.publish(
         MQTT_CONFIG.topics.publish,
         JSON.stringify(payload),
-        { qos: 1 }, // Quality of service level 1 (at least once delivery)
+        { qos: 1 },
         (err) => {
           if (err) {
             setMessages((prev) => [...prev, `Failed to send ${componentName}: ${err.message}`])
@@ -135,12 +146,10 @@ export default function MqttManager() {
 
   const sendComponentsToESP32 = () => {
     pcbComponents.forEach((component) => {
-      // Create a simple matrix representation for the component
       const matrix = Array(64)
         .fill(0)
         .map(() => Array(64).fill(0))
 
-      // Mark component position (simplified for demo)
       matrix[32][32] = 1 // Center point
 
       const success = sendMatrixData(component.name, matrix)
@@ -149,6 +158,31 @@ export default function MqttManager() {
         setMessages((prev) => [...prev, `Prepared ${component.name} for transmission`])
       }
     })
+  }
+
+  const sendWifiConfig = () => {
+    if (!client || status !== "connected") {
+      setMessages((prev) => [...prev, "Cannot send Wi-Fi config - MQTT not connected"])
+      return
+    }
+
+    try {
+      client.publish(
+        MQTT_CONFIG.topics.wifiConfig,
+        JSON.stringify(wifiConfig),
+        { qos: 1 },
+        (err) => {
+          if (err) {
+            setMessages((prev) => [...prev, `Failed to send Wi-Fi config: ${err.message}`])
+          } else {
+            setMessages((prev) => [...prev, `Sent Wi-Fi configuration to ESP32`])
+            setShowWifiConfig(false)
+          }
+        }
+      )
+    } catch (err) {
+      setMessages((prev) => [...prev, `Error preparing Wi-Fi config: ${err instanceof Error ? err.message : String(err)}`])
+    }
   }
 
   return (
@@ -165,12 +199,53 @@ export default function MqttManager() {
         </Badge>
       </div>
 
-      <Alert variant="destructive" className="py-2 bg-destructive/10 border-destructive/20">
-        <AlertDescription className="text-xs flex items-center">
-          <AlertCircle className="h-3 w-3 mr-1 text-destructive" />
-          ESP32 is listening on topic: <span className="font-mono ml-1 text-destructive">esp32/matrix/data</span>
-        </AlertDescription>
-      </Alert>
+      <div className="flex gap-2">
+        <Alert variant="destructive" className="py-2 bg-destructive/10 border-destructive/20 flex-1">
+          <AlertDescription className="text-xs flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1 text-destructive" />
+            ESP32 is listening on topic: <span className="font-mono ml-1 text-destructive">esp32/matrix/data</span>
+          </AlertDescription>
+        </Alert>
+
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowWifiConfig(!showWifiConfig)}
+          className="flex items-center gap-1"
+        >
+          <Wifi className="h-3 w-3" />
+          <span>Wi-Fi Config</span>
+        </Button>
+      </div>
+
+      {showWifiConfig && (
+        <div className="border rounded-md p-3 space-y-2 bg-background/50">
+          <div className="text-sm font-medium">Configure ESP32 Wi-Fi</div>
+          <div className="space-y-1">
+            <input
+              type="text"
+              placeholder="Wi-Fi SSID"
+              value={wifiConfig.ssid}
+              onChange={(e) => setWifiConfig({...wifiConfig, ssid: e.target.value})}
+              className="w-full p-2 text-xs border rounded"
+            />
+            <input
+              type="password"
+              placeholder="Wi-Fi Password"
+              value={wifiConfig.password}
+              onChange={(e) => setWifiConfig({...wifiConfig, password: e.target.value})}
+              className="w-full p-2 text-xs border rounded"
+            />
+          </div>
+          <Button 
+            size="sm" 
+            onClick={sendWifiConfig}
+            disabled={!wifiConfig.ssid}
+          >
+            Send Configuration
+          </Button>
+        </div>
+      )}
 
       <div className="border border-border/50 rounded-md p-2 h-32 overflow-y-auto text-xs space-y-1 bg-background/50">
         {messages.length > 0 ? (
@@ -210,31 +285,7 @@ export default function MqttManager() {
             <div className="text-muted-foreground">No components sent yet</div>
           )}
         </div>
-
-        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-muted mr-2 rounded-sm"></div>
-            <span>0: Empty</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-primary mr-2 rounded-sm"></div>
-            <span>1: Positive Terminal</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-destructive mr-2 rounded-sm"></div>
-            <span>2: Negative Terminal</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-secondary mr-2 rounded-sm"></div>
-            <span>3: Other Pins</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-background/90 border border-primary/30 mr-2 rounded-sm"></div>
-            <span>4: Component Body</span>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
-
