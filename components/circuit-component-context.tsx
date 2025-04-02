@@ -109,6 +109,7 @@ export interface Component {
   inductance?: number
   keywords?: string[]
   datasheet?: string
+  
 }
 
 interface Connection {

@@ -1,4 +1,3 @@
-// pcb-view.tsx
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
@@ -242,134 +241,155 @@ const handleWheel = (e: React.WheelEvent) => {
   }, []);
 
   // Initialize grid and matrix
-  const initializeGrid = useCallback(() => {
-    setProcessingStatus("processing");
+ // pcb-view.tsx
+"use client"
 
-    const newGrid = Array(GRID_SIZE)
-      .fill(0)
-      .map(() => Array(GRID_SIZE).fill(0));
+// ... (existing imports remain the same)
 
-    const newFullMatrix = Array(GRID_SIZE)
-      .fill(0)
-      .map(() => Array(GRID_SIZE).fill(0));
+// Constants for PCB grid
+const GRID_SIZE = 64;
+const CELL_SIZE = 10;
+const PCB_PITCH = 2.54; // mm per grid cell
 
-    try {
-      const newComponentPositions = { ...componentPositions };
-      let positionsChanged = false;
+// ... (rest of the code remains the same until the initializeGrid function)
 
-      pcbComponents.forEach((component) => {
-        const position = componentPositions[component.id] || {
-          x: Math.floor((component.x / 2000) * GRID_SIZE),
-          y: Math.floor((component.y / 2000) * GRID_SIZE),
-        };
+const initializeGrid = useCallback(() => {
+  setProcessingStatus("processing");
 
-        // Snap to grid based on PCB pitch
-        const gridX = Math.round(position.x / 2) * 2;
-        const gridY = Math.round(position.y / 2) * 2;
+  const newGrid = Array(GRID_SIZE)
+    .fill(0)
+    .map(() => Array(GRID_SIZE).fill(0));
 
-        const adjustedX = Math.max(0, Math.min(GRID_SIZE - component.footprint.width, gridX));
-        const adjustedY = Math.max(0, Math.min(GRID_SIZE - component.footprint.height, gridY));
+  const newFullMatrix = Array(GRID_SIZE)
+    .fill(0)
+    .map(() => Array(GRID_SIZE).fill(0));
 
-        // Place component on grid
-        const componentId = pcbComponents.findIndex((c) => c.id === component.id) + 1;
+  try {
+    const newComponentPositions = { ...componentPositions };
+    let positionsChanged = false;
 
-        for (let j = 0; j < component.footprint.height; j++) {
-          for (let i = 0; i < component.footprint.width; i++) {
-            const posX = adjustedX + i;
-            const posY = adjustedY + j;
+    pcbComponents.forEach((component) => {
+      const position = componentPositions[component.id] || {
+        x: Math.floor((component.x / 2000) * GRID_SIZE),
+        y: Math.floor((component.y / 2000) * GRID_SIZE),
+      };
 
-            if (posX >= 0 && posX < GRID_SIZE && posY >= 0 && posY < GRID_SIZE) {
-              newGrid[posY][posX] = componentId;
-            }
+      // Convert footprint dimensions from mm to grid cells
+      const componentWidthCells = Math.ceil(component.footprint.width / PCB_PITCH);
+      const componentHeightCells = Math.ceil(component.footprint.height / PCB_PITCH);
+
+      // Snap to grid based on PCB pitch
+      const gridX = Math.round(position.x / 2) * 2;
+      const gridY = Math.round(position.y / 2) * 2;
+
+      const adjustedX = Math.max(0, Math.min(GRID_SIZE - componentWidthCells, gridX));
+      const adjustedY = Math.max(0, Math.min(GRID_SIZE - componentHeightCells, gridY));
+
+      // Place component on grid
+      const componentId = pcbComponents.findIndex((c) => c.id === component.id) + 1;
+
+      for (let j = 0; j < componentHeightCells; j++) {
+        for (let i = 0; i < componentWidthCells; i++) {
+          const posX = adjustedX + i;
+          const posY = adjustedY + j;
+
+          if (posX >= 0 && posX < GRID_SIZE && posY >= 0 && posY < GRID_SIZE) {
+            newGrid[posY][posX] = componentId;
           }
         }
+      }
 
-        // Place pins with KiCad-style numbering
-        component.footprint.pins.forEach((pin: any, index: number) => {
-          const pinX = adjustedX + pin.x;
-          const pinY = adjustedY + pin.y;
+      // Place pins with KiCad-style numbering
+      component.footprint.pins.forEach((pin: any, index: number) => {
+        // Convert pin positions from mm to grid cells
+        const pinX = adjustedX + Math.round(pin.x / PCB_PITCH);
+        const pinY = adjustedY + Math.round(pin.y / PCB_PITCH);
 
-          if (pinX >= 0 && pinX < GRID_SIZE && pinY >= 0 && pinY < GRID_SIZE) {
-            if (pin.type === "positive") {
-              newGrid[pinY][pinX] = -1; // Positive pin
-            } else if (pin.type === "negative") {
-              newGrid[pinY][pinX] = -2; // Negative pin
-            } else {
-              newGrid[pinY][pinX] = -(index + 3); // Other pins with sequential numbers
-            }
+        if (pinX >= 0 && pinX < GRID_SIZE && pinY >= 0 && pinY < GRID_SIZE) {
+          if (pin.type === "positive") {
+            newGrid[pinY][pinX] = -1; // Positive pin
+          } else if (pin.type === "negative") {
+            newGrid[pinY][pinX] = -2; // Negative pin
+          } else {
+            newGrid[pinY][pinX] = -(index + 3); // Other pins with sequential numbers
           }
-        });
-
-        if (
-          newComponentPositions[component.id]?.x !== adjustedX ||
-          newComponentPositions[component.id]?.y !== adjustedY
-        ) {
-          newComponentPositions[component.id] = { x: adjustedX, y: adjustedY };
-          positionsChanged = true;
         }
       });
 
-      // Create full matrix representation
-      for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-          const cell = newGrid[y][x];
-          if (cell === -1) {
-            newFullMatrix[y][x] = 1; // Positive pin
-          } else if (cell === -2) {
-            newFullMatrix[y][x] = 2; // Negative pin
-          } else if (cell < 0) {
-            newFullMatrix[y][x] = 3; // Other pins
-          } else if (cell !== 0) {
-            newFullMatrix[y][x] = 4; // Component body
-          }
+      if (
+        newComponentPositions[component.id]?.x !== adjustedX ||
+        newComponentPositions[component.id]?.y !== adjustedY
+      ) {
+        newComponentPositions[component.id] = { x: adjustedX, y: adjustedY };
+        positionsChanged = true;
+      }
+    });
+
+    // Create full matrix representation
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const cell = newGrid[y][x];
+        if (cell === -1) {
+          newFullMatrix[y][x] = 1; // Positive pin
+        } else if (cell === -2) {
+          newFullMatrix[y][x] = 2; // Negative pin
+        } else if (cell < 0) {
+          newFullMatrix[y][x] = 3; // Other pins
+        } else if (cell !== 0) {
+          newFullMatrix[y][x] = 4; // Component body
         }
       }
-
-      if (positionsChanged) {
-        setComponentPositions(newComponentPositions);
-        setShouldUpdateConnections(true);
-      }
-
-      setProcessingStatus("success");
-      setGrid(newGrid);
-      setFullMatrix(newFullMatrix);
-    } catch (error) {
-      console.error("Error initializing grid:", error);
-      setProcessingStatus("error");
     }
-  }, [pcbComponents, componentPositions]);
 
+    if (positionsChanged) {
+      setComponentPositions(newComponentPositions);
+      setShouldUpdateConnections(true);
+    }
+
+    setProcessingStatus("success");
+    setGrid(newGrid);
+    setFullMatrix(newFullMatrix);
+  } catch (error) {
+    console.error("Error initializing grid:", error);
+    setProcessingStatus("error");
+  }
+}, [pcbComponents, componentPositions]);
   // Update connections when component positions change
   const updateConnections = useCallback(() => {
     if (!shouldUpdateConnections) return;
-
+  
     connections.forEach((connection) => {
       removeConnection(connection.id);
     });
-
+  
     pcbComponents.forEach((startComponent) => {
       const startPos = componentPositions[startComponent.id];
       if (!startPos) return;
-
+  
       startComponent.connections?.forEach((endComponentId) => {
         const endComponent = pcbComponents.find((c) => c.id === endComponentId);
         const endPos = endComponent ? componentPositions[endComponent.id] : null;
-
+  
         if (endComponent && endPos) {
-          const startPin = startComponent.footprint.pins[0];
-          const endPin = endComponent.footprint.pins[0];
-
+          // Find positive pins in both components
+          const startPin = startComponent.footprint.pins.find(
+            (pin: any) => pin.type === "positive"
+          );
+          const endPin = endComponent.footprint.pins.find(
+            (pin: any) => pin.type === "positive"
+          );
+  
           if (startPin && endPin) {
             const startPinPos = {
-              x: startPos.x + startPin.x,
-              y: startPos.y + startPin.y,
+              x: startPos.x + Math.round(startPin.x / PCB_PITCH),
+              y: startPos.y + Math.round(startPin.y / PCB_PITCH),
             };
-
+  
             const endPinPos = {
-              x: endPos.x + endPin.x,
-              y: endPos.y + endPin.y,
+              x: endPos.x + Math.round(endPin.x / PCB_PITCH),
+              y: endPos.y + Math.round(endPin.y / PCB_PITCH),
             };
-
+  
             addConnection({
               start: startComponent.id,
               end: endComponent.id,
@@ -380,10 +400,9 @@ const handleWheel = (e: React.WheelEvent) => {
         }
       });
     });
-
+  
     setShouldUpdateConnections(false);
   }, [pcbComponents, componentPositions, connections, removeConnection, addConnection, shouldUpdateConnections]);
-
   useEffect(() => {
     initializeGrid();
   }, [pcbComponents, initializeGrid]);
