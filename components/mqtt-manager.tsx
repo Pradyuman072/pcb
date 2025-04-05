@@ -132,7 +132,7 @@ export default function MqttManager() {
   const sendComponentsToESP32 = (components: any[]) => {
     components.forEach(component => {
       const matrixString = generateMatrixString(component)
-      if (client?.connected()) {
+      if (client?.connected) {
         setPendingComponents(prev => [...prev, component.name])
         client.publish(MQTT_CONFIG.topics.message, matrixString, { qos: 1 }, (err) => {
           if (err) {
