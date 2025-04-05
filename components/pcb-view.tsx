@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
-import { useCircuitComponents } from "./circuit-component-context"
-import { Button } from "@/components/ui/button"
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useCircuitComponents } from "./circuit-component-context";
+import { Button } from "@/components/ui/button";
 import {
   Pause,
   Play,
@@ -17,15 +17,15 @@ import {
   RefreshCw,
   Check,
   Move,
-} from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
-import { Slider } from "@/components/ui/slider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import MqttManager from "./mqtt-manager"
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MqttManager from "./mqtt-manager";
 
 // KiCad-style component icons
 const ResistorIcon = () => (
@@ -82,7 +82,7 @@ const getComponentIcon = (type: string) => {
     case "ic": return <ChipIcon />;
     default: return <ChipIcon />;
   }
-};
+}
 
 // Constants for PCB grid
 const GRID_SIZE = 64;
@@ -91,6 +91,13 @@ const PCB_PITCH = 2.54; // mm
 
 interface PcbViewProps {
   isPrototyping: boolean;
+}
+
+interface SentData {
+  componentName: string;
+  orientation: 1 | 2;
+  matrix: number[][];
+  timestamp: number;
 }
 
 export default function PcbView({ isPrototyping }: PcbViewProps) {
@@ -109,7 +116,7 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(2);
   const [viewMode, setViewMode] = useState<"schematic" | "realistic">("realistic");
-  const [sentData, setSentData] = useState<any>(null);
+  const [sentData, setSentData] = useState<SentData | null>(null);
   const [activeTab, setActiveTab] = useState<"send" | "data">("send");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fullMatrix, setFullMatrix] = useState<number[][]>([]);
@@ -123,112 +130,110 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   const [isMovingComponent, setIsMovingComponent] = useState(false);
   const [stars, setStars] = useState<Array<{ x: number; y: number; size: number; opacity: number }>>([]);
   const [shouldUpdateConnections, setShouldUpdateConnections] = useState(false);
-// Add these functions inside the PcbView component, before the return statement
 
-const sendCurrentComponent = () => {
-  if (currentComponent >= 0 && currentComponent < pcbComponents.length) {
-    const component = pcbComponents[currentComponent];
-    setSentData({
-      componentName: component.name,
-      orientation,
-      matrix: fullMatrix,
-      timestamp: Date.now(),
-    });
-  }
-};
+  const sendCurrentComponent = () => {
+    if (currentComponent >= 0 && currentComponent < pcbComponents.length) {
+      const component = pcbComponents[currentComponent];
+      setSentData({
+        componentName: component.name,
+        orientation,
+        matrix: fullMatrix,
+        timestamp: Date.now(),
+      });
+    }
+  };
 
-const handlePlayPause = () => {
-  if (isPlaying) {
-    setIsPlaying(false);
-  } else {
-    setIsPlaying(true);
-    if (currentComponent === -1 || currentComponent >= pcbComponents.length - 1) {
+  const handlePlayPause = () => {
+    setIsPlaying((prev) => !prev);
+    if (!isPlaying) {
+      if (currentComponent === -1 || currentComponent >= pcbComponents.length - 1) {
+        setCurrentComponent(0);
+        setProgress((1 / pcbComponents.length) * 100);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (pcbComponents.length === 0) return;
+
+    if (currentComponent < pcbComponents.length - 1) {
+      const nextComponent = currentComponent + 1;
+      setCurrentComponent(nextComponent);
+      setProgress(((nextComponent + 1) / pcbComponents.length) * 100);
+    } else {
       setCurrentComponent(0);
       setProgress((1 / pcbComponents.length) * 100);
     }
-  }
-};
-
-const handleNext = () => {
-  if (pcbComponents.length === 0) return;
-
-  if (currentComponent < pcbComponents.length - 1) {
-    const nextComponent = currentComponent + 1;
-    setCurrentComponent(nextComponent);
-    setProgress(((nextComponent + 1) / pcbComponents.length) * 100);
-  } else {
-    setCurrentComponent(0);
-    setProgress((1 / pcbComponents.length) * 100);
-  }
-};
-
-const toggleOrientation = () => {
-  setOrientation((prev) => (prev === 1 ? 2 : 1));
-};
-
-const clearSentData = () => {
-  setSentData(null);
-};
-
-const downloadMatrixData = () => {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullMatrix));
-  const downloadAnchorNode = document.createElement("a");
-  downloadAnchorNode.setAttribute("href", dataStr);
-  downloadAnchorNode.setAttribute("download", "matrix_data.json");
-  document.body.appendChild(downloadAnchorNode);
-  downloadAnchorNode.click();
-  downloadAnchorNode.remove();
-};
-
-const handleZoomIn = () => {
-  setZoom((prev) => Math.min(prev + 0.25, 3));
-};
-
-const handleZoomOut = () => {
-  setZoom((prev) => Math.max(prev - 0.25, 0.5));
-};
-
-const handleResetZoom = () => {
-  setZoom(1);
-  setPanOffset({ x: 0, y: 0 });
-};
-
-const handleComponentClick = (componentId: string, e: React.MouseEvent) => {
-  e.stopPropagation();
-  setSelectedComponent(selectedComponent === componentId ? null : componentId);
-};
-
-const handleStartMoving = (componentId: string, e: React.MouseEvent) => {
-  e.stopPropagation();
-  setSelectedComponent(componentId);
-  setIsMovingComponent(true);
-};
-
-const handleCanvasClick = () => {
-  setSelectedComponent(null);
-  setIsMovingComponent(false);
-};
-
-const handleWheel = (e: React.WheelEvent) => {
-  e.preventDefault();
-
-  const rect = canvasRef.current?.getBoundingClientRect();
-  if (!rect) return;
-
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-  const newZoom = Math.max(0.5, Math.min(3, zoom * zoomFactor));
-
-  const newPanOffset = {
-    x: mouseX - (mouseX - panOffset.x) * (newZoom / zoom),
-    y: mouseY - (mouseY - panOffset.y) * (newZoom / zoom),
   };
 
-  setZoom(newZoom);
-  setPanOffset(newPanOffset);
-};
+  const toggleOrientation = () => {
+    setOrientation((prev) => (prev === 1 ? 2 : 1));
+  };
+
+  const clearSentData = () => {
+    setSentData(null);
+  };
+
+  const downloadMatrixData = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullMatrix));
+    const downloadAnchorNode = document.createElement("a");
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "matrix_data.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleZoomIn = () => {
+    setZoom((prev) => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handleComponentClick = (componentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedComponent(selectedComponent === componentId ? null : componentId);
+  };
+
+  const handleStartMoving = (componentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedComponent(componentId);
+    setIsMovingComponent(true);
+  };
+
+  const handleCanvasClick = () => {
+    setSelectedComponent(null);
+    setIsMovingComponent(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+    const newZoom = Math.max(0.5, Math.min(3, zoom * zoomFactor));
+
+    const newPanOffset = {
+      x: mouseX - (mouseX - panOffset.x) * (newZoom / zoom),
+      y: mouseY - (mouseY - panOffset.y) * (newZoom / zoom),
+    };
+
+    setZoom(newZoom);
+    setPanOffset(newPanOffset);
+  };
+
   // Generate stars for background
   useEffect(() => {
     const newStars = Array.from({ length: 200 }, () => ({
@@ -240,156 +245,144 @@ const handleWheel = (e: React.WheelEvent) => {
     setStars(newStars);
   }, []);
 
-  // Initialize grid and matrix
- // pcb-view.tsx
-"use client"
+  const initializeGrid = useCallback(() => {
+    setProcessingStatus("processing");
 
-// ... (existing imports remain the same)
+    const newGrid = Array(GRID_SIZE)
+      .fill(0)
+      .map(() => Array(GRID_SIZE).fill(0));
 
-// Constants for PCB grid
-const GRID_SIZE = 64;
-const CELL_SIZE = 10;
-const PCB_PITCH = 2.54; // mm per grid cell
+    const newFullMatrix = Array(GRID_SIZE)
+      .fill(0)
+      .map(() => Array(GRID_SIZE).fill(0));
 
-// ... (rest of the code remains the same until the initializeGrid function)
+    try {
+      const newComponentPositions = { ...componentPositions };
+      let positionsChanged = false;
 
-const initializeGrid = useCallback(() => {
-  setProcessingStatus("processing");
+      pcbComponents.forEach((component) => {
+        const position = componentPositions[component.id] || {
+          x: Math.floor((component.x / 2000) * GRID_SIZE),
+          y: Math.floor((component.y / 2000) * GRID_SIZE),
+        };
 
-  const newGrid = Array(GRID_SIZE)
-    .fill(0)
-    .map(() => Array(GRID_SIZE).fill(0));
+        // Convert footprint dimensions from mm to grid cells
+        const componentWidthCells = Math.ceil(component.footprint.width / PCB_PITCH);
+        const componentHeightCells = Math.ceil(component.footprint.height / PCB_PITCH);
 
-  const newFullMatrix = Array(GRID_SIZE)
-    .fill(0)
-    .map(() => Array(GRID_SIZE).fill(0));
+        // Snap to grid based on PCB pitch
+        const gridX = Math.round(position.x / 2) * 2;
+        const gridY = Math.round(position.y / 2) * 2;
 
-  try {
-    const newComponentPositions = { ...componentPositions };
-    let positionsChanged = false;
+        const adjustedX = Math.max(0, Math.min(GRID_SIZE - componentWidthCells, gridX));
+        const adjustedY = Math.max(0, Math.min(GRID_SIZE - componentHeightCells, gridY));
 
-    pcbComponents.forEach((component) => {
-      const position = componentPositions[component.id] || {
-        x: Math.floor((component.x / 2000) * GRID_SIZE),
-        y: Math.floor((component.y / 2000) * GRID_SIZE),
-      };
+        // Place component on grid
+        const componentId = pcbComponents.findIndex((c) => c.id === component.id) + 1;
 
-      // Convert footprint dimensions from mm to grid cells
-      const componentWidthCells = Math.ceil(component.footprint.width / PCB_PITCH);
-      const componentHeightCells = Math.ceil(component.footprint.height / PCB_PITCH);
+        for (let j = 0; j < componentHeightCells; j++) {
+          for (let i = 0; i < componentWidthCells; i++) {
+            const posX = adjustedX + i;
+            const posY = adjustedY + j;
 
-      // Snap to grid based on PCB pitch
-      const gridX = Math.round(position.x / 2) * 2;
-      const gridY = Math.round(position.y / 2) * 2;
-
-      const adjustedX = Math.max(0, Math.min(GRID_SIZE - componentWidthCells, gridX));
-      const adjustedY = Math.max(0, Math.min(GRID_SIZE - componentHeightCells, gridY));
-
-      // Place component on grid
-      const componentId = pcbComponents.findIndex((c) => c.id === component.id) + 1;
-
-      for (let j = 0; j < componentHeightCells; j++) {
-        for (let i = 0; i < componentWidthCells; i++) {
-          const posX = adjustedX + i;
-          const posY = adjustedY + j;
-
-          if (posX >= 0 && posX < GRID_SIZE && posY >= 0 && posY < GRID_SIZE) {
-            newGrid[posY][posX] = componentId;
+            if (posX >= 0 && posX < GRID_SIZE && posY >= 0 && posY < GRID_SIZE) {
+              newGrid[posY][posX] = componentId;
+            }
           }
         }
-      }
 
-      // Place pins with KiCad-style numbering
-      component.footprint.pins.forEach((pin: any, index: number) => {
-        // Convert pin positions from mm to grid cells
-        const pinX = adjustedX + Math.round(pin.x / PCB_PITCH);
-        const pinY = adjustedY + Math.round(pin.y / PCB_PITCH);
+        // Place pins with KiCad-style numbering
+        component.footprint.pins.forEach((pin: any, index: number) => {
+          // Convert pin positions from mm to grid cells
+          const pinX = adjustedX + Math.round(pin.x / PCB_PITCH);
+          const pinY = adjustedY + Math.round(pin.y / PCB_PITCH);
 
-        if (pinX >= 0 && pinX < GRID_SIZE && pinY >= 0 && pinY < GRID_SIZE) {
-          if (pin.type === "positive") {
-            newGrid[pinY][pinX] = -1; // Positive pin
-          } else if (pin.type === "negative") {
-            newGrid[pinY][pinX] = -2; // Negative pin
-          } else {
-            newGrid[pinY][pinX] = -(index + 3); // Other pins with sequential numbers
+          if (pinX >= 0 && pinX < GRID_SIZE && pinY >= 0 && pinY < GRID_SIZE) {
+            if (pin.type === "positive") {
+              newGrid[pinY][pinX] = -1; // Positive pin
+            } else if (pin.type === "negative") {
+              newGrid[pinY][pinX] = -2; // Negative pin
+            } else {
+              newGrid[pinY][pinX] = -(index + 3); // Other pins with sequential numbers
+            }
           }
+        });
+
+        if (
+          newComponentPositions[component.id]?.x !== adjustedX ||
+          newComponentPositions[component.id]?.y !== adjustedY
+        ) {
+          newComponentPositions[component.id] = { x: adjustedX, y: adjustedY };
+          positionsChanged = true;
         }
       });
 
-      if (
-        newComponentPositions[component.id]?.x !== adjustedX ||
-        newComponentPositions[component.id]?.y !== adjustedY
-      ) {
-        newComponentPositions[component.id] = { x: adjustedX, y: adjustedY };
-        positionsChanged = true;
-      }
-    });
-
-    // Create full matrix representation
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let x = 0; x < GRID_SIZE; x++) {
-        const cell = newGrid[y][x];
-        if (cell === -1) {
-          newFullMatrix[y][x] = 1; // Positive pin
-        } else if (cell === -2) {
-          newFullMatrix[y][x] = 2; // Negative pin
-        } else if (cell < 0) {
-          newFullMatrix[y][x] = 3; // Other pins
-        } else if (cell !== 0) {
-          newFullMatrix[y][x] = 4; // Component body
+      // Create full matrix representation
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          const cell = newGrid[y][x];
+          if (cell === -1) {
+            newFullMatrix[y][x] = 1; // Positive pin
+          } else if (cell === -2) {
+            newFullMatrix[y][x] = 2; // Negative pin
+          } else if (cell < 0) {
+            newFullMatrix[y][x] = 3; // Other pins
+          } else if (cell !== 0) {
+            newFullMatrix[y][x] = 4; // Component body
+          }
         }
       }
-    }
 
-    if (positionsChanged) {
-      setComponentPositions(newComponentPositions);
-      setShouldUpdateConnections(true);
-    }
+      if (positionsChanged) {
+        setComponentPositions(newComponentPositions);
+        setShouldUpdateConnections(true);
+      }
 
-    setProcessingStatus("success");
-    setGrid(newGrid);
-    setFullMatrix(newFullMatrix);
-  } catch (error) {
-    console.error("Error initializing grid:", error);
-    setProcessingStatus("error");
-  }
-}, [pcbComponents, componentPositions]);
+      setProcessingStatus("success");
+      setGrid(newGrid);
+      setFullMatrix(newFullMatrix);
+    } catch (error) {
+      console.error("Error initializing grid:", error);
+      setProcessingStatus("error");
+    }
+  }, [pcbComponents, componentPositions]);
+
   // Update connections when component positions change
   const updateConnections = useCallback(() => {
     if (!shouldUpdateConnections) return;
-  
+
     connections.forEach((connection) => {
       removeConnection(connection.id);
     });
-  
+
     pcbComponents.forEach((startComponent) => {
       const startPos = componentPositions[startComponent.id];
       if (!startPos) return;
-  
+
       startComponent.connections?.forEach((endComponentId) => {
         const endComponent = pcbComponents.find((c) => c.id === endComponentId);
         const endPos = endComponent ? componentPositions[endComponent.id] : null;
-  
+
         if (endComponent && endPos) {
           // Find positive pins in both components
           const startPin = startComponent.footprint.pins.find(
             (pin: any) => pin.type === "positive"
           );
           const endPin = endComponent.footprint.pins.find(
-            (pin: any) => pin.type === "positive"
+            (pin: any) => pin.type === "negative" 
           );
-  
+
           if (startPin && endPin) {
             const startPinPos = {
               x: startPos.x + Math.round(startPin.x / PCB_PITCH),
               y: startPos.y + Math.round(startPin.y / PCB_PITCH),
             };
-  
+
             const endPinPos = {
               x: endPos.x + Math.round(endPin.x / PCB_PITCH),
               y: endPos.y + Math.round(endPin.y / PCB_PITCH),
             };
-  
+
             addConnection({
               start: startComponent.id,
               end: endComponent.id,
@@ -400,9 +393,10 @@ const initializeGrid = useCallback(() => {
         }
       });
     });
-  
+
     setShouldUpdateConnections(false);
   }, [pcbComponents, componentPositions, connections, removeConnection, addConnection, shouldUpdateConnections]);
+
   useEffect(() => {
     initializeGrid();
   }, [pcbComponents, initializeGrid]);
@@ -658,73 +652,71 @@ const initializeGrid = useCallback(() => {
     selectedComponent,
     stars,
   ]);
-  // Add these functions inside the PcbView component, before the return statement
 
-const handleMouseDown = (e: React.MouseEvent) => {
-  if (e.button === 0) { // Left mouse button
-    // If a component is selected and we're in move mode
-    if (selectedComponent && isMovingComponent) {
-      // Let the component move handler handle it
-      return;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      // If a component is selected and we're in move mode
+      if (selectedComponent && isMovingComponent) {
+        // Let the component move handler handle it
+        return;
+      }
+
+      // Otherwise handle canvas dragging
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - panOffset.x,
+        y: e.clientY - panOffset.y
+      });
     }
+  };
 
-    // Otherwise handle canvas dragging
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - panOffset.x,
-      y: e.clientY - panOffset.y
-    });
-  }
-};
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      // Handle canvas panning
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    } else if (selectedComponent && isMovingComponent) {
+      // Handle component movement
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-const handleMouseMove = (e: React.MouseEvent) => {
-  if (isDragging) {
-    // Handle canvas panning
-    setPanOffset({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
-  } else if (selectedComponent && isMovingComponent) {
-    // Handle component movement
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      // Calculate new position in grid coordinates
+      const x = Math.round((e.clientX - rect.left - panOffset.x) / (CELL_SIZE * zoom));
+      const y = Math.round((e.clientY - rect.top - panOffset.y) / (CELL_SIZE * zoom));
 
-    // Calculate new position in grid coordinates
-    const x = Math.round((e.clientX - rect.left - panOffset.x) / (CELL_SIZE * zoom));
-    const y = Math.round((e.clientY - rect.top - panOffset.y) / (CELL_SIZE * zoom));
+      // Snap to PCB grid (every 2 cells for 5.08mm pitch)
+      const snappedX = Math.round(x / 2) * 2;
+      const snappedY = Math.round(y / 2) * 2;
 
-    // Snap to PCB grid (every 2 cells for 5.08mm pitch)
-    const snappedX = Math.round(x / 2) * 2;
-    const snappedY = Math.round(y / 2) * 2;
+      // Update component position
+      setComponentPositions((prev) => ({
+        ...prev,
+        [selectedComponent]: {
+          x: Math.max(0, Math.min(GRID_SIZE - 4, snappedX)),
+          y: Math.max(0, Math.min(GRID_SIZE - 4, snappedY)),
+        },
+      }));
+    }
+  };
 
-    // Update component position
-    setComponentPositions((prev) => ({
-      ...prev,
-      [selectedComponent]: {
-        x: Math.max(0, Math.min(GRID_SIZE - 4, snappedX)),
-        y: Math.max(0, Math.min(GRID_SIZE - 4, snappedY)),
-      },
-    }));
-  }
-};
+  const handleMouseUp = () => {
+    setIsDragging(false);
 
-const handleMouseUp = () => {
-  setIsDragging(false);
+    // If we were moving a component, update the grid
+    if (selectedComponent && isMovingComponent) {
+      initializeGrid();
+      setIsMovingComponent(false);
+    }
+  };
 
-  // If we were moving a component, update the grid
-  if (selectedComponent && isMovingComponent) {
-    initializeGrid();
-    setIsMovingComponent(false);
-  }
-};
-
-const handleMouseLeave = () => {
-  setIsDragging(false);
-  if (isMovingComponent) {
-    setIsMovingComponent(false);
-  }
-};
-  // ... rest of the component logic (handlePlayPause, handleNext, etc.) ...
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+    if (isMovingComponent) {
+      setIsMovingComponent(false);
+    }
+  };
 
   return (
     <div className="relative h-full flex flex-col items-center">
@@ -744,272 +736,272 @@ const handleMouseLeave = () => {
             </Button>
 
             {selectedComponent && (
-              <Button
-                variant={isMovingComponent ? "default" : "outline"}
-                onClick={() => setIsMovingComponent(!isMovingComponent)}
-              >
-                <Move className="h-4 w-4 mr-2" />
-                {isMovingComponent ? "Placing Component..." : "Move Component"}
-              </Button>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.5}>
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleResetZoom}>
-              {Math.round(zoom * 100)}%
-            </Button>
-            <Button variant="outline" size="icon" onClick={handleZoomIn} disabled={zoom >= 3}>
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {pcbComponents.length === 0 ? (
-          <Alert className="mb-4">
-            <AlertTitle>No components in PCB view</AlertTitle>
-            <AlertDescription>
-              Move components from the schematic to the PCB view by selecting a component and clicking the "Move to PCB"
-              button.
-            </AlertDescription>
-          </Alert>
-        ) : processingStatus === "processing" ? (
-          <div className="flex items-center justify-center h-64 border rounded-md">
-            <div className="flex flex-col items-center">
-              <RefreshCw className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium">Generating PCB layout...</p>
-              <p className="text-sm text-muted-foreground mt-2">Placing {pcbComponents.length} components</p>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="relative border border-border rounded-md overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            width={GRID_SIZE * CELL_SIZE}
-            height={GRID_SIZE * CELL_SIZE}
-            className={`bg-black ${isDragging ? "cursor-grabbing" : isMovingComponent ? "cursor-move" : "cursor-grab"}`}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            onWheel={handleWheel}
-            onClick={handleCanvasClick}
-          />
-
-          {/* Component selection overlay */}
-          {pcbComponents.map((component) => {
-            const position = componentPositions[component.id];
-            if (!position) return null;
-
-            return (
-              <div
-                key={component.id}
-                className={`absolute pointer-events-auto ${selectedComponent === component.id ? "z-20" : "z-10"}`}
-                style={{
-                  left: position.x * CELL_SIZE * zoom + panOffset.x,
-                  top: position.y * CELL_SIZE * zoom + panOffset.y,
-                  width: component.footprint.width * CELL_SIZE * zoom,
-                  height: component.footprint.height * CELL_SIZE * zoom,
-                  cursor: isMovingComponent && selectedComponent === component.id ? "move" : "pointer",
-                }}
-                onClick={(e) => handleComponentClick(component.id, e)}
-                onMouseDown={
-                  isMovingComponent && selectedComponent === component.id
-                    ? (e) => e.stopPropagation()
-                    : (e) => handleStartMoving(component.id, e)
-                }
-              >
-                {/* Invisible overlay for component interaction */}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {isPrototyping && (
-        <div className="border-t p-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab as any}>
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="send" className="flex-1">
-                Send Components
-              </TabsTrigger>
-              <TabsTrigger value="data" className="flex-1">
-                Data View
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="send" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Component Sender</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {currentComponent >= 0 && currentComponent < pcbComponents.length
-                      ? `Current: ${pcbComponents[currentComponent].name} (${orientation === 1 ? "Normal" : "Rotated"})`
-                      : "Select a component to send"}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={toggleOrientation}
-                    title={orientation === 1 ? "Normal Orientation" : "Rotated Orientation"}
-                  >
-                    {orientation === 1 ? "1" : <RotateCw className="h-4 w-4" />}
-                  </Button>
-
-                  <Button variant="outline" size="icon" onClick={handlePlayPause} disabled={pcbComponents.length === 0}>
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-
-                  <Button variant="outline" size="icon" onClick={handleNext} disabled={pcbComponents.length === 0}>
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="default"
-                    onClick={sendCurrentComponent}
-                    disabled={currentComponent < 0 || currentComponent >= pcbComponents.length}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Current
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Progress</span>
-                    <span className="text-sm">{Math.round(progress)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">Speed</span>
-                    <span className="text-sm">{speed}s per component</span>
-                  </div>
-                  <Slider min={0.5} max={5} step={0.5} value={[speed]} onValueChange={(value) => setSpeed(value[0])} />
-                </div>
-              </div>
-
-              <ScrollArea className="h-60">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-4">
-                  {pcbComponents.map((component, index) => (
-                    <Card
-                      key={component.id}
-                      className={`cursor-pointer transition-all hover:border-primary ${currentComponent === index ? "border-primary bg-primary/5" : ""}`}
-                      onClick={() => setCurrentComponent(index)}
-                    >
-                      <CardHeader className="py-2 px-3 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getComponentIcon(component.type)}
-                          <CardTitle className="text-sm">{component.name}</CardTitle>
-                        </div>
-                        <Badge variant={currentComponent === index ? "default" : "outline"} className="text-xs">
-                          {index + 1}/{pcbComponents.length}
-                        </Badge>
-                      </CardHeader>
-                      <CardContent className="py-2 px-3">
-                        <div className="text-xs text-muted-foreground">
-                          {component.value && <div>Value: {component.value}</div>}
-                          <div>
-                            Size: {component.footprint.width}x{component.footprint.height}
-                          </div>
-                          <div>Pins: {component.footprint.pins.length}</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="data">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Data Transmission</h3>
-                    <p className="text-sm text-muted-foreground">View the data being sent to the ESP32</p>
-                  </div>
-
-                  {sentData && (
-                    <Button variant="outline" size="sm" onClick={clearSentData}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Data
-                    </Button>
-                  )}
-                </div>
-
-                <MqttManager />
-                
-                {sentData && (
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-4 pr-4">
-                      <Card>
-                        <CardHeader className="py-2 px-3">
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-sm">Component Data</CardTitle>
-                            <Badge variant="outline" className="text-xs">
-                              {new Date(sentData.timestamp).toLocaleTimeString()}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <div className="font-medium">Name:</div>
-                              <div>{sentData.componentName}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium">Orientation:</div>
-                              <div>{sentData.orientation === 1 ? "Normal" : "Rotated"}</div>
-                            </div>
-                            <div className="col-span-2">
-                              <div className="font-medium">Data Type:</div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">JSON</Badge>
-                                <Badge variant="outline">Binary Matrix</Badge>
-                                <Badge variant="default">MQTT Payload</Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="py-2 px-3">
-                          <CardTitle className="text-sm">Matrix Representation (64x64)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3">
-                          <div className="bg-muted p-2 rounded-md overflow-x-auto">
-                            <p className="text-xs mb-2">
-                              The matrix is 64x64 in size. Showing a preview of the first 10x10 elements:
-                            </p>
-                            <pre className="text-xs">
-  {sentData.matrix
-    .slice(0, 10)
-    .map((row: number[]) => row.slice(0, 10).join(" "))
-    .join("\n")}
-  {"\n..."}
-</pre>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
-    </div>
-  );
-}
+                           <Button
+                           variant={isMovingComponent ? "default" : "outline"}
+                           onClick={() => setIsMovingComponent(!isMovingComponent)}
+                         >
+                           <Move className="h-4 w-4 mr-2" />
+                           {isMovingComponent ? "Placing Component..." : "Move Component"}
+                         </Button>
+                       )}
+                     </div>
+           
+                     <div className="flex gap-2">
+                       <Button variant="outline" size="icon" onClick={handleZoomOut} disabled={zoom <= 0.5}>
+                         <ZoomOut className="h-4 w-4" />
+                       </Button>
+                       <Button variant="outline" size="sm" onClick={handleResetZoom}>
+                         {Math.round(zoom * 100)}%
+                       </Button>
+                       <Button variant="outline" size="icon" onClick={handleZoomIn} disabled={zoom >= 3}>
+                         <ZoomIn className="h-4 w-4" />
+                       </Button>
+                     </div>
+                   </div>
+           
+                   {pcbComponents.length === 0 ? (
+                     <Alert className="mb-4">
+                       <AlertTitle>No components in PCB view</AlertTitle>
+                       <AlertDescription>
+                         Move components from the schematic to the PCB view by selecting a component and clicking the "Move to PCB"
+                         button.
+                       </AlertDescription>
+                     </Alert>
+                   ) : processingStatus === "processing" ? (
+                     <div className="flex items-center justify-center h-64 border rounded-md">
+                       <div className="flex flex-col items-center">
+                         <RefreshCw className="h-8 w-8 animate-spin text-primary mb-4" />
+                         <p className="text-lg font-medium">Generating PCB layout...</p>
+                         <p className="text-sm text-muted-foreground mt-2">Placing {pcbComponents.length} components</p>
+                       </div>
+                     </div>
+                   ) : null}
+           
+                   <div className="relative border border-border rounded-md overflow-hidden">
+                     <canvas
+                       ref={canvasRef}
+                       width={GRID_SIZE * CELL_SIZE}
+                       height={GRID_SIZE * CELL_SIZE}
+                       className={`bg-black ${isDragging ? "cursor-grabbing" : isMovingComponent ? "cursor-move" : "cursor-grab"}`}
+                       onMouseDown={handleMouseDown}
+                       onMouseMove={handleMouseMove}
+                       onMouseUp={handleMouseUp}
+                       onMouseLeave={handleMouseLeave}
+                       onWheel={handleWheel}
+                       onClick={handleCanvasClick}
+                     />
+           
+                     {/* Component selection overlay */}
+                     {pcbComponents.map((component) => {
+                       const position = componentPositions[component.id];
+                       if (!position) return null;
+           
+                       return (
+                         <div
+                           key={component.id}
+                           className={`absolute pointer-events-auto ${selectedComponent === component.id ? "z-20" : "z-10"}`}
+                           style={{
+                             left: position.x * CELL_SIZE * zoom + panOffset.x,
+                             top: position.y * CELL_SIZE * zoom + panOffset.y,
+                             width: component.footprint.width * CELL_SIZE * zoom,
+                             height: component.footprint.height * CELL_SIZE * zoom,
+                             cursor: isMovingComponent && selectedComponent === component.id ? "move" : "pointer",
+                           }}
+                           onClick={(e) => handleComponentClick(component.id, e)}
+                           onMouseDown={
+                             isMovingComponent && selectedComponent === component.id
+                               ? (e) => e.stopPropagation()
+                               : (e) => handleStartMoving(component.id, e)
+                           }
+                         >
+                           {/* Invisible overlay for component interaction */}
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+           
+                 {isPrototyping && (
+                   <div className="border-t p-4">
+                     <Tabs value={activeTab} onValueChange={setActiveTab as any}>
+                       <TabsList className="w-full mb-4">
+                         <TabsTrigger value="send" className="flex-1">
+                           Send Components
+                         </TabsTrigger>
+                         <TabsTrigger value="data" className="flex-1">
+                           Data View
+                         </TabsTrigger>
+                       </TabsList>
+           
+                       <TabsContent value="send" className="space-y-4">
+                         <div className="flex items-center justify-between">
+                           <div>
+                             <h3 className="font-medium">Component Sender</h3>
+                             <p className="text-sm text-muted-foreground">
+                               {currentComponent >= 0 && currentComponent < pcbComponents.length
+                                 ? `Current: ${pcbComponents[currentComponent].name} (${orientation === 1 ? "Normal" : "Rotated"})`
+                                 : "Select a component to send"}
+                             </p>
+                           </div>
+           
+                           <div className="flex items-center gap-2">
+                             <Button
+                               variant="outline"
+                               size="icon"
+                               onClick={toggleOrientation}
+                               title={orientation === 1 ? "Normal Orientation" : "Rotated Orientation"}
+                             >
+                               {orientation === 1 ? "1" : <RotateCw className="h-4 w-4" />}
+                             </Button>
+           
+                             <Button variant="outline" size="icon" onClick={handlePlayPause} disabled={pcbComponents.length === 0}>
+                               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                             </Button>
+           
+                             <Button variant="outline" size="icon" onClick={handleNext} disabled={pcbComponents.length === 0}>
+                               <SkipForward className="h-4 w-4" />
+                             </Button>
+           
+                             <Button
+                               variant="default"
+                               onClick={sendCurrentComponent}
+                               disabled={currentComponent < 0 || currentComponent >= pcbComponents.length}
+                             >
+                               <Send className="h-4 w-4 mr-2" />
+                               Send Current
+                             </Button>
+                           </div>
+                         </div>
+           
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div>
+                             <div className="flex justify-between mb-1">
+                               <span className="text-sm">Progress</span>
+                               <span className="text-sm">{Math.round(progress)}%</span>
+                             </div>
+                             <Progress value={progress} className="h-2" />
+                           </div>
+           
+                           <div>
+                             <div className="flex justify-between mb-1">
+                               <span className="text-sm">Speed</span>
+                               <span className="text-sm">{speed}s per component</span>
+                             </div>
+                             <Slider min={0.5} max={5} step={0.5} value={[speed]} onValueChange={(value) => setSpeed(value[0])} />
+                           </div>
+                         </div>
+           
+                         <ScrollArea className="h-60">
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-4">
+                             {pcbComponents.map((component, index) => (
+                               <Card
+                                 key={component.id}
+                                 className={`cursor-pointer transition-all hover:border-primary ${currentComponent === index ? "border-primary bg-primary/5" : ""}`}
+                                 onClick={() => setCurrentComponent(index)}
+                               >
+                                 <CardHeader className="py-2 px-3 flex flex-row items-center justify-between">
+                                   <div className="flex items-center gap-2">
+                                     {getComponentIcon(component.type)}
+                                     <CardTitle className="text-sm">{component.name}</CardTitle>
+                                   </div>
+                                   <Badge variant={currentComponent === index ? "default" : "outline"} className="text-xs">
+                                     {index + 1}/{pcbComponents.length}
+                                   </Badge>
+                                 </CardHeader>
+                                 <CardContent className="py-2 px-3">
+                                   <div className="text-xs text-muted-foreground">
+                                     {component.value && <div>Value: {component.value}</div>}
+                                     <div>
+                                       Size: {component.footprint.width}x{component.footprint.height}
+                                     </div>
+                                     <div>Pins: {component.footprint.pins.length}</div>
+                                   </div>
+                                 </CardContent>
+                               </Card>
+                             ))}
+                           </div>
+                         </ScrollArea>
+                       </TabsContent>
+           
+                       <TabsContent value="data">
+                         <div className="space-y-4">
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <h3 className="font-medium">Data Transmission</h3>
+                               <p className="text-sm text-muted-foreground">View the data being sent to the ESP32</p>
+                             </div>
+           
+                             {sentData && (
+                               <Button variant="outline" size="sm" onClick={clearSentData}>
+                                 <Trash2 className="h-4 w-4 mr-2" />
+                                 Clear Data
+                               </Button>
+                             )}
+                           </div>
+           
+                           <MqttManager />
+                           
+                           {sentData && (
+                             <ScrollArea className="h-[400px]">
+                               <div className="space-y-4 pr-4">
+                                 <Card>
+                                   <CardHeader className="py-2 px-3">
+                                     <div className="flex justify-between items-center">
+                                       <CardTitle className="text-sm">Component Data</CardTitle>
+                                       <Badge variant="outline" className="text-xs">
+                                         {new Date(sentData.timestamp).toLocaleTimeString()}
+                                       </Badge>
+                                     </div>
+                                   </CardHeader>
+                                   <CardContent className="py-2 px-3">
+                                     <div className="grid grid-cols-2 gap-2 text-sm">
+                                       <div>
+                                         <div className="font-medium">Name:</div>
+                                         <div>{sentData.componentName}</div>
+                                       </div>
+                                       <div>
+                                         <div className="font-medium">Orientation:</div>
+                                         <div>{sentData.orientation === 1 ? "Normal" : "Rotated"}</div>
+                                       </div>
+                                       <div className="col-span-2">
+                                         <div className="font-medium">Data Type:</div>
+                                         <div className="flex items-center gap-2">
+                                           <Badge variant="outline">JSON</Badge>
+                                           <Badge variant="outline">Binary Matrix</Badge>
+                                           <Badge variant="default">MQTT Payload</Badge>
+                                         </div>
+                                       </div>
+                                     </div>
+                                   </CardContent>
+                                 </Card>
+           
+                                 <Card>
+                                   <CardHeader className="py-2 px-3">
+                                     <CardTitle className="text-sm">Matrix Representation (64x64)</CardTitle>
+                                   </CardHeader>
+                                   <CardContent className="py-2 px-3">
+                                     <div className="bg-muted p-2 rounded-md overflow-x-auto">
+                                       <p className="text-xs mb-2">
+                                         The matrix is 64x64 in size. Showing a preview of the first 10x10 elements:
+                                       </p>
+                                       <pre className="text-xs">
+                                         {sentData.matrix
+                                           .slice(0, 10)
+                                           .map((row: number[]) => row.slice(0, 10).join(" "))
+                                           .join("\n")}
+                                         {"\n..."}
+                                       </pre>
+                                     </div>
+                                   </CardContent>
+                                 </Card>
+                               </div>
+                             </ScrollArea>
+                           )}
+                         </div>
+                       </TabsContent>
+                     </Tabs>
+                   </div>
+                 )}
+               </div>
+             );
+           }

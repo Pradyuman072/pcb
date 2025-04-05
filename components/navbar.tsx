@@ -11,7 +11,13 @@ import { useTheme } from "next-themes"
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const { setTheme, theme, resolvedTheme } = useTheme()
+
+  // Wait for component to mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +26,14 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const toggleTheme = () => {
+    if (theme === "dark" || resolvedTheme === "dark") {
+      setTheme("light")
+    } else {
+      setTheme("dark")
+    }
+  }
 
   const navVariants = {
     hidden: { opacity: 0, y: -20 },
@@ -109,7 +123,7 @@ export default function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300 btn-hover-effect"
+                className="h-9 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
               >
                 <Github className="mr-2 h-4 w-4" />
                 GitHub
@@ -120,9 +134,13 @@ export default function Navbar() {
                 variant="outline"
                 size="sm"
                 className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                onClick={toggleTheme}
               >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {mounted && (theme === "dark" || resolvedTheme === "dark") ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
               </Button>
             </motion.div>
             <motion.div variants={itemVariants}>
@@ -199,9 +217,13 @@ export default function Navbar() {
                 variant="outline"
                 size="sm"
                 className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                onClick={toggleTheme}
               >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {mounted && (theme === "dark" || resolvedTheme === "dark") ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 variant="outline"

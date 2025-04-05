@@ -13,24 +13,24 @@
     --popover: 222 47% 7%; /* Darker popover background */
     --popover-foreground: 210 40% 95%; /* Slightly lighter popover foreground */
 
-    --primary: 196 80% 50%; /* Darker primary color */
+    --primary: 120 80% 40%; /* Darker neon green primary color */
     --primary-foreground: 222 47% 9%; /* Darker primary foreground */
 
-    --secondary: 250 70% 60%; /* Darker secondary color */
+    --secondary: 0 80% 40%; /* Darker neon green accent color */
     --secondary-foreground: 222 47% 9%; /* Darker secondary foreground */
 
-    --muted: 0, 0%, 100% /* Darker muted color */
-    --muted-foreground: 215 20% 60%; /* Slightly lighter muted foreground */
+    --muted: 0, 0%, 100%; /* White for muted elements (grid) */
+    --muted-foreground: 215 20% 65%; /* Slightly lighter muted foreground */
 
-    --accent: 250 70% 60%; /* Darker accent color */
+    --accent: 120 80% 40%; /* Darker neon green accent color */
     --accent-foreground: 210 40% 95%; /* Slightly lighter accent foreground */
 
-    --destructive: 0 62% 60%; /* Darker destructive color */
+    --destructive: 0 85% 60%; /* Neon red destructive color */
     --destructive-foreground: 210 40% 95%; /* Slightly lighter destructive foreground */
 
     --border: 217 33% 25%; /* Darker border color */
     --input: 217 33% 25%; /* Darker input color */
-    --ring: 196 80% 50%; /* Darker ring color */
+    --ring: 120 80% 40%; /* Darker neon green ring color */
 
     --radius: 0.5rem;
   }
@@ -45,12 +45,13 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
 .bg-grid-pattern {
-    background-image: 
-      linear-gradient(to right, rgba(var(--muted), 0.5) 1px, transparent 1px), /* White grid lines */
-      linear-gradient(to bottom, rgba(var(--muted), 0.5) 1px, transparent 1px); /* White grid lines */
-    background-size: 20px 20px; /* Adjust size as needed */
-  }
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.2) 1px, transparent 1px), /* Black grid lines */
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 1px, transparent 1px); /* Black grid lines */
+  background-size: 20px 20px; /* Adjust size as needed */
+  background-color: white; /* Set grid background to white */
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -59,7 +60,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: hsl(var(--background));
   border-radius: 4px;
 }
 
@@ -119,4 +120,35 @@
 
 .circuit-animate {
   animation: circuit-pulse 2s infinite;
+}
+
+/* Neon gradient text effect */
+.glow-text {
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(120, 80%, 50%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 5px hsl(var(--primary) / 0.5), 0 0 10px hsl(var(--primary) / 0.5), 0 0 15px hsl(var(--primary) / 0.5);
+}
+
+.glow-text-secondary {
+  background: linear-gradient(90deg, hsl(var(--secondary)), hsl(0, 80%, 50%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 5px hsl(var(--secondary) / 0.5), 0 0 10px hsl(var(--secondary) / 0.5), 0 0 15px hsl(var(--secondary) / 0.5);
+}
+
+/* Terminal connection points */
+.terminal-point {
+  transition: all 0.2s ease;
+}
+
+.terminal-point:hover {
+  filter: brightness(1.5);
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Connection lines */
+.connection-line {
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px currentColor);
 }
