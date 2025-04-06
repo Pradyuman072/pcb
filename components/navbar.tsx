@@ -66,7 +66,7 @@ export default function Navbar() {
         <motion.div variants={itemVariants} className="mr-4 flex">
           <Link href="/" className="flex items-center space-x-2 group">
             <CircuitBoard className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-            <span className="hidden font-bold sm:inline-block text-primary">Illumitrace</span>
+            <span className="hidden font-bold sm:inline-block text-primary dark:text-glow">Illumitrace</span>
           </Link>
         </motion.div>
 
@@ -133,8 +133,13 @@ export default function Navbar() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
+                className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300 dark:glow-hover"
                 onClick={toggleTheme}
+                aria-label={
+                  mounted && (theme === "dark" || resolvedTheme === "dark")
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
               >
                 {mounted && (theme === "dark" || resolvedTheme === "dark") ? (
                   <Sun className="h-4 w-4" />
@@ -218,6 +223,11 @@ export default function Navbar() {
                 size="sm"
                 className="h-9 w-9 p-0 border-primary/50 text-primary hover:text-primary-foreground hover:bg-primary/90 transition-all duration-300"
                 onClick={toggleTheme}
+                aria-label={
+                  mounted && (theme === "dark" || resolvedTheme === "dark")
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
               >
                 {mounted && (theme === "dark" || resolvedTheme === "dark") ? (
                   <Sun className="h-4 w-4" />

@@ -131,17 +131,60 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   const [stars, setStars] = useState<Array<{ x: number; y: number; size: number; opacity: number }>>([]);
   const [shouldUpdateConnections, setShouldUpdateConnections] = useState(false);
 
+
   const sendCurrentComponent = () => {
     if (currentComponent >= 0 && currentComponent < pcbComponents.length) {
       const component = pcbComponents[currentComponent];
+      const position = componentPositions[component.id];
+      if (!position) return;
+
+      // Create empty 64x64 matrix
+      const componentMatrix = Array(GRID_SIZE)
+        .fill(0)
+        .map(() => Array(GRID_SIZE).fill(0));
+
+      // Calculate component dimensions in grid cells
+      const componentWidthCells = Math.ceil(component.footprint.width / PCB_PITCH);
+      const componentHeightCells = Math.ceil(component.footprint.height / PCB_PITCH);
+
+      // Mark component body cells (value 4)
+      for (let j = 0; j < componentHeightCells; j++) {
+        for (let i = 0; i < componentWidthCells; i++) {
+          const x = position.x + i;
+          const y = position.y + j;
+          if (x < GRID_SIZE && y < GRID_SIZE) {
+            componentMatrix[y][x] = 4; // Component body
+          }
+        }
+      }
+
+      // Mark component pins
+      component.footprint.pins.forEach((pin: any) => {
+        const pinX = position.x + Math.round(pin.x / PCB_PITCH);
+        const pinY = position.y + Math.round(pin.y / PCB_PITCH);
+        if (pinX < GRID_SIZE && pinY < GRID_SIZE) {
+          switch (pin.type) {
+            case "positive":
+              componentMatrix[pinY][pinX] = 1; // Positive pin
+              break;
+            case "negative":
+              componentMatrix[pinY][pinX] = 2; // Negative pin
+              break;
+            default:
+              componentMatrix[pinY][pinX] = 3; // Other pins
+          }
+        }
+      });
+
       setSentData({
         componentName: component.name,
         orientation,
-        matrix: fullMatrix,
+        matrix: componentMatrix,
         timestamp: Date.now(),
       });
     }
   };
+
 
   const handlePlayPause = () => {
     setIsPlaying((prev) => !prev);
@@ -350,39 +393,39 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
   // Update connections when component positions change
   const updateConnections = useCallback(() => {
     if (!shouldUpdateConnections) return;
-
+  
     connections.forEach((connection) => {
       removeConnection(connection.id);
     });
-
+  
     pcbComponents.forEach((startComponent) => {
       const startPos = componentPositions[startComponent.id];
       if (!startPos) return;
-
+  
       startComponent.connections?.forEach((endComponentId) => {
         const endComponent = pcbComponents.find((c) => c.id === endComponentId);
         const endPos = endComponent ? componentPositions[endComponent.id] : null;
-
+  
         if (endComponent && endPos) {
-          // Find positive pins in both components
+          // Find positive and negative pins
           const startPin = startComponent.footprint.pins.find(
             (pin: any) => pin.type === "positive"
           );
           const endPin = endComponent.footprint.pins.find(
-            (pin: any) => pin.type === "negative" 
+            (pin: any) => pin.type === "negative"
           );
-
+  
           if (startPin && endPin) {
             const startPinPos = {
               x: startPos.x + Math.round(startPin.x / PCB_PITCH),
               y: startPos.y + Math.round(startPin.y / PCB_PITCH),
             };
-
+  
             const endPinPos = {
               x: endPos.x + Math.round(endPin.x / PCB_PITCH),
               y: endPos.y + Math.round(endPin.y / PCB_PITCH),
             };
-
+  
             addConnection({
               start: startComponent.id,
               end: endComponent.id,
@@ -393,10 +436,9 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
         }
       });
     });
-
+  
     setShouldUpdateConnections(false);
   }, [pcbComponents, componentPositions, connections, removeConnection, addConnection, shouldUpdateConnections]);
-
   useEffect(() => {
     initializeGrid();
   }, [pcbComponents, initializeGrid]);
@@ -939,8 +981,16 @@ export default function PcbView({ isPrototyping }: PcbViewProps) {
                              )}
                            </div>
            
-                           <MqttManager />
-                           
+                        
+<TabsContent value="data">
+  {sentData && (
+    <MqttManager 
+      matrix={sentData.matrix} 
+      shouldConnect={!!sentData}
+      componentName={sentData.componentName}
+    />
+  )}
+</TabsContent>
                            {sentData && (
                              <ScrollArea className="h-[400px]">
                                <div className="space-y-4 pr-4">

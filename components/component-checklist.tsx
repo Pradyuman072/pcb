@@ -42,7 +42,7 @@ export default function ComponentChecklist() {
                   <span>PCB</span>
                 </div>
               ) : (
-                <div className="flex items-center text-xs text-amber-500">
+                <div className="flex items-center text-xs text-destructive">
                   <X className="h-4 w-4 mr-1" />
                   <span>Schematic only</span>
                 </div>

@@ -20,26 +20,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useCircuitComponents } from "./circuit-component-context"
-import {
-  Zap,
-  Battery,
-  Circle,
-  Square,
-  ToggleLeft,
-  Lightbulb,
-  Search,
-  Layers,
-  Gauge,
-  Wrench,
-  Fan,
-  Power,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
+import { Search, Layers, ChevronLeft, ChevronRight } from "lucide-react"
 import { motion } from "framer-motion"
-import { getIconForType, getComponentTypeFromName } from "./CustomIcons"
-
-
+import { getIconForType } from "./CustomIcons"
 
 interface ComponentDefinition {
   type: string
@@ -47,7 +30,7 @@ interface ComponentDefinition {
   icon: React.ElementType
   value?: string
   footprint: any
-  source?: "kicad" | "custom" | "api"
+  source?: "Ojas" | "custom" | "api"
   description?: string
 }
 
@@ -105,7 +88,7 @@ export default function ComponentSidebar() {
   useEffect(() => {
     if (!isLoading && availableComponents.length > 0) {
       const mappedComponents = availableComponents.map((comp) => {
-        const componentSource: "kicad" | "custom" | "api" = "kicad"
+        const componentSource: "Ojas" | "custom" | "api" = "Ojas"
         return {
           type: comp.type,
           name: comp.name,
@@ -169,7 +152,7 @@ export default function ComponentSidebar() {
     <Sidebar className="border-r mt-16 bg-card/30 backdrop-blur-sm">
       <SidebarHeader className="border-b border-primary/10">
         <div className="p-4">
-          <h2 className="text-lg font-semibold mb-2 text-primary">Components</h2>
+          <h2 className="text-lg font-semibold mb-2 text-primary dark:text-glow">Components</h2>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-primary" />
             <Input
@@ -237,7 +220,7 @@ export default function ComponentSidebar() {
         <SidebarSeparator />
 
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between text-primary">
+          <SidebarGroupLabel className="flex items-center justify-between text-primary dark:text-glow">
             <span>Components</span>
             <Badge variant="outline" className="text-xs bg-background/50 text-primary border-primary/30">
               {filteredComponents.length}
@@ -297,8 +280,8 @@ export default function ComponentSidebar() {
         <SidebarSeparator />
 
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between text-primary">
-            <span>KiCad Components</span>
+          <SidebarGroupLabel className="flex items-center justify-between text-primary dark:text-glow">
+            <span>Ojas Components</span>
             <Badge variant="outline" className="text-xs bg-background/50 text-primary border-primary/30">
               Library
             </Badge>
@@ -318,9 +301,9 @@ export default function ComponentSidebar() {
               >
                 <Layers className="h-8 w-8 text-primary mb-2" />
               </motion.div>
-              <div className="text-sm font-medium text-foreground">KiCad Library</div>
+              <div className="text-sm font-medium text-foreground">Ojas Library</div>
               <div className="text-xs text-muted-foreground mt-1">
-                {isLoading ? "Loading KiCad components..." : `${availableComponents.length} components loaded`}
+                {isLoading ? "Loading Ojas components..." : `${availableComponents.length} components loaded`}
               </div>
             </div>
           </SidebarGroupContent>

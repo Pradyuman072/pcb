@@ -94,7 +94,7 @@ export default function CircuitDesigner() {
                                 onClick={() => setActiveView(button.id)}
                                 className={`flex items-center transition-all duration-300 ${
                                   activeView === button.id
-                                    ? "bg-primary text-primary-foreground shadow-md"
+                                    ? "bg-primary text-primary-foreground shadow-md dark:glow-hover"
                                     : "hover:border-primary/50 hover:text-primary"
                                 }`}
                               >
@@ -160,7 +160,7 @@ export default function CircuitDesigner() {
                             className={`transition-all duration-300 ${
                               isPrototyping
                                 ? "bg-destructive/90 hover:bg-destructive"
-                                : "bg-primary/90 hover:bg-primary"
+                                : "bg-primary/90 hover:bg-primary dark:glow-hover"
                             }`}
                           >
                             {isPrototyping ? "Stop Prototyping" : "Start Prototyping"}
@@ -193,13 +193,13 @@ export default function CircuitDesigner() {
                   </div>
                   <div className="w-full md:w-64 border-t md:border-t-0 md:border-l overflow-auto bg-card/30 backdrop-blur-sm">
                     <div className="p-4">
-                      <h2 className="font-semibold mb-2 text-primary">Components</h2>
+                      <h2 className="font-semibold mb-2 text-primary dark:text-glow">Components</h2>
                       <ComponentChecklist />
                     </div>
                     {isPrototyping && (
                       <div className="p-4 border-t border-primary/10">
-                        <h2 className="font-semibold mb-2 text-primary">MQTT Status</h2>
-                        <MqttManager />
+                        <h2 className="font-semibold mb-2 text-primary dark:text-glow">MQTT Status</h2>
+                       
                       </div>
                     )}
                   </div>
@@ -212,3 +212,4 @@ export default function CircuitDesigner() {
     </CircuitComponentProvider>
   )
 }
+
