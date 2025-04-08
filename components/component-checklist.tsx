@@ -33,21 +33,9 @@ export default function ComponentChecklist() {
           >
             <div className="flex-1 min-w-0">
               <div className="font-medium truncate">{component.name}</div>
-              {component.value && <div className="text-xs text-muted-foreground">{component.value}</div>}
+              {component.value && <div className="text-xs text-muted-foreground overflow-hidden">{component.value}</div>}
             </div>
-            <div className="ml-2">
-              {isInPcb ? (
-                <div className="flex items-center text-xs text-primary">
-                  <Check className="h-4 w-4 mr-1" />
-                  <span>PCB</span>
-                </div>
-              ) : (
-                <div className="flex items-center text-xs text-destructive">
-                  <X className="h-4 w-4 mr-1" />
-                  <span>Schematic only</span>
-                </div>
-              )}
-            </div>
+         
           </motion.div>
         )
       })}

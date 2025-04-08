@@ -12,7 +12,6 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import ComponentSidebar from "@/components/component-sidebar"
 import SchematicEditor from "@/components/schematic-editor"
 import PcbView from "@/components/pcb-view"
-import ComponentChecklist from "@/components/component-checklist"
 import MqttManager from "@/components/mqtt-manager"
 import { CircuitComponentProvider } from "@/components/circuit-component-context"
 import SimulationView from "@/components/simulation-view"
@@ -20,6 +19,7 @@ import DetailedSimulation from "@/components/detailed-simulation"
 import { CircuitBoard, Cpu, Zap, BarChart, HelpCircle, Settings } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion, AnimatePresence } from "framer-motion"
+import ComponentChecklist from "./component-checklist"
 
 export default function CircuitDesigner() {
   const [activeView, setActiveView] = useState<string>("schematic")
@@ -186,23 +186,22 @@ export default function CircuitDesigner() {
                       >
                         {activeView === "schematic" && <SchematicEditor />}
                         {activeView === "pcb" && <PcbView isPrototyping={isPrototyping} />}
+                       
                         {isSimulating && activeView === "simulation" && <SimulationView />}
                         {isSimulating && activeView === "detailed-simulation" && <DetailedSimulation />}
                       </motion.div>
                     </AnimatePresence>
                   </div>
-                  <div className="w-full md:w-64 border-t md:border-t-0 md:border-l overflow-auto bg-card/30 backdrop-blur-sm">
+{!isPrototyping&&                  <div className="w-full md:w-64 border-t md:border-t-0 md:border-l overflow-auto bg-card/30 backdrop-blur-sm">
                     <div className="p-4">
-                      <h2 className="font-semibold mb-2 text-primary dark:text-glow">Components</h2>
+                      <h2 className="font-semibold mb-2 text-primary">Components</h2>
                       <ComponentChecklist />
                     </div>
-                    {isPrototyping && (
-                      <div className="p-4 border-t border-primary/10">
-                        <h2 className="font-semibold mb-2 text-primary dark:text-glow">MQTT Status</h2>
-                       
-                      </div>
-                    )}
+                  
                   </div>
+                   }
+                   
+                 
                 </main>
               </div>
             </SidebarProvider>

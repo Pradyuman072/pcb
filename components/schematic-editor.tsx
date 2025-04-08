@@ -6,128 +6,28 @@ import { useDrop } from "react-dnd"
 import { useDrag } from "react-dnd"
 import { Button } from "@/components/ui/button"
 import { useCircuitComponents } from "./circuit-component-context"
-import {
-  Trash2,
-  RotateCw,
-  MoveRight,
-  Grid,
-  ZoomIn,
-  ZoomOut,
-  Circle,
-  Square,
-  Cpu,
-  ToggleLeft,
-  Lightbulb,
-  Battery,
-  Zap
-} from "lucide-react"
+import { Trash2, RotateCw, Grid, ZoomIn, ZoomOut } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-// Custom icons for electronic components
-const Resistor = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M2 12h5" />
-    <path d="M17 12h5" />
-    <rect x="7" y="9" width="10" height="6" rx="2" />
-  </svg>
-);
-
-const Capacitor = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M2 12h7" />
-    <path d="M15 12h7" />
-    <path d="M9 6v12" />
-    <path d="M15 6v12" />
-  </svg>
-);
-
-const Diode = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M4 12h6" />
-    <path d="M14 12h6" />
-    <polygon points="10 8 14 12 10 16" />
-    <line x1="14" y1="8" x2="14" y2="16" />
-  </svg>
-);
-
-const Transistor = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <circle cx="12" cy="12" r="6" />
-    <line x1="12" y1="6" x2="12" y2="2" />
-    <line x1="6" y1="18" x2="6" y2="22" />
-    <line x1="18" y1="18" x2="18" y2="22" />
-  </svg>
-);
-
-const getIconForType = (type: string): React.ElementType => {
-  switch (type) {
-    case "resistor": return Resistor;
-    case "capacitor": return Capacitor;
-    case "inductor": return Circle;
-    case "diode": return Diode;
-    case "transistor": return Transistor;
-    case "ic": return Cpu;
-    case "led": return Lightbulb;
-    case "switch": return ToggleLeft;
-    case "voltmeter": return Circle; // Simplified to Circle for schematic
-    case "ammeter": return Circle;   // Simplified to Circle for schematic
-    case "power_supply": return Battery;
-    case "ground": return Square;
-    case "connector": return Square;
-    case "fuse": return Zap;
-    default: return Square;
-  }
-};
-
+import { getIconForType } from "./CustomIcons"
+function calculateRotatedPinPosition(component, pin) {
+  const rotationRad = (component.rotation * Math.PI) / 180;
+  const pinRelativeX = pin.x * 5; // Updated scaling
+  const pinRelativeY = pin.y * 5; // Updated scaling
+  
+  const rotatedX = pinRelativeX * Math.cos(rotationRad) - pinRelativeY * Math.sin(rotationRad);
+  const rotatedY = pinRelativeX * Math.sin(rotationRad) + pinRelativeY * Math.cos(rotationRad);
+  
+  return {
+    x: component.x + rotatedX,
+    y: component.y + rotatedY
+  };
+}
 const DraggableComponent = React.memo(function DraggableComponent({
   id,
   component,
   isSelected,
   isConnecting,
+  isAnyConnecting,
   onSelect,
   onStartConnection,
   onRotate,
@@ -138,12 +38,13 @@ const DraggableComponent = React.memo(function DraggableComponent({
   component: any
   isSelected: boolean
   isConnecting: boolean
+  isAnyConnecting: boolean
   onSelect: (id: string, e: React.MouseEvent) => void
-  onStartConnection: (id: string, e: React.MouseEvent) => void
+  onStartConnection: (id: string, pinIndex: number, e: React.MouseEvent) => void
   onRotate: (id: string) => void
   onDelete: (id: string) => void
   onMoveToPcb: (id: string) => void
-}) {
+})  {
   const Icon = getIconForType(component.type)
 
   const [{ isDragging }, drag] = useDrag(
@@ -156,6 +57,17 @@ const DraggableComponent = React.memo(function DraggableComponent({
     }),
     [id],
   )
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        onMoveToPcb(id)
+      } catch (error) {
+        console.error("Error moving component to PCB:", error)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [id, onMoveToPcb])
 
   return (
     <div
@@ -174,26 +86,47 @@ const DraggableComponent = React.memo(function DraggableComponent({
     >
       <Icon className="h-10 w-10 text-foreground" />
 
+      {/* Render pins for connection - only show when component is selected or when connecting */}
+      {component.footprint && component.footprint.pins && (isSelected || isConnecting || isAnyConnecting) && (
+        <div className="absolute inset-0">
+         {component.footprint.pins.map((pin, pinIndex) => {
+  const pinX = pin.x * 5; // Updated scaling
+  const pinY = pin.y * 5; // Updated scaling
+
+            // Determine pin color based on type
+            let pinColor = "bg-yellow-500" // Default for "other"
+            if (pin.type === "positive") {
+              pinColor = "bg-green-500"
+            } else if (pin.type === "negative") {
+              pinColor = "bg-red-500"
+            }
+
+            return (
+              <div
+                key={pinIndex}
+                className={`absolute w-3 h-3 rounded-full ${pinColor} border border-gray-700 cursor-pointer hover:ring-2 hover:ring-blue-400 z-20`}
+                style={{
+                  left: `calc(50% + ${pinX}px)`,
+                  top: `calc(50% + ${pinY}px)`,
+                  transform: "translate(-50%, -50%)",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (isAnyConnecting && !isConnecting) {
+                    onSelect(id, e)  // This will trigger handleComponentClick which handles completing connections
+                  } else {
+                    onStartConnection(id, pinIndex, e)
+                  }
+                }}
+              />
+            )
+          })}
+        </div>
+      )}
+
       {isSelected && (
         <TooltipProvider>
           <div className="absolute -top-10 left-0 flex space-x-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8 bg-background shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onStartConnection(id, e)
-                  }}
-                >
-                  <div className="h-2 w-2 rounded-full bg-blue-500" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Connect</TooltipContent>
-            </Tooltip>
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -209,23 +142,6 @@ const DraggableComponent = React.memo(function DraggableComponent({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Rotate</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-8 w-8 bg-background shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onMoveToPcb(id)
-                  }}
-                >
-                  <MoveRight className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Move to PCB</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -251,7 +167,6 @@ const DraggableComponent = React.memo(function DraggableComponent({
   )
 })
 
-// ... [rest of the component remains the same] ...
 export default function SchematicEditor() {
   const {
     schematicComponents,
@@ -266,6 +181,7 @@ export default function SchematicEditor() {
 
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null)
   const [connecting, setConnecting] = useState<string | null>(null)
+  const [connectingPinIndex, setConnectingPinIndex] = useState<number>(-1)
   const [connectionStart, setConnectionStart] = useState<{ x: number; y: number } | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -275,7 +191,10 @@ export default function SchematicEditor() {
   const [showGrid, setShowGrid] = useState(true)
   const editorRef = useRef<HTMLDivElement>(null)
   const [connectionPositions, setConnectionPositions] = useState<
-    Record<string, { startPos: { x: number; y: number }; endPos: { x: number; y: number } }>
+    Record<
+      string,
+      { startPos: { x: number; y: number }; endPos: { x: number; y: number }; startPinType: string; endPinType: string }
+    >
   >({})
 
   const handleDrop = useCallback(
@@ -291,6 +210,7 @@ export default function SchematicEditor() {
         // Update component position
         updateComponent(item.id, { x, y })
       } else {
+        // Add component
         addComponent({
           ...item,
           x,
@@ -323,74 +243,117 @@ export default function SchematicEditor() {
         const endComponent = schematicComponents.find((c) => c.id === id)
 
         if (startComponent && endComponent && connecting !== id) {
-          const startComponentEl = document.getElementById(connecting)
-          const endComponentEl = document.getElementById(id)
-          const editorRect = editorRef.current?.getBoundingClientRect()
+          // Get the selected pin from the starting component
+          const startPin = startComponent.footprint.pins[connectingPinIndex]
 
-          if (startComponentEl && endComponentEl && editorRect) {
-            const startRect = startComponentEl.getBoundingClientRect()
-            const endRect = endComponentEl.getBoundingClientRect()
+          // Find the closest pin on the target component
+          const endPinIndex = findClosestPinIndex(endComponent, mousePosition)
+          const endPin = endComponent.footprint.pins[endPinIndex]
 
-            const startPos = {
-              x: (startRect.left + startRect.width / 2 - editorRect.left - panOffset.x) / zoom,
-              y: (startRect.top + startRect.height / 2 - editorRect.top - panOffset.y) / zoom,
-            }
+          // Calculate exact pin positions with rotation adjustment
+          const startPinPos = calculateRotatedPinPosition(startComponent, startPin)
+          const endPinPos = calculateRotatedPinPosition(endComponent, endPin)
 
-            const endPos = {
-              x: (endRect.left + endRect.width / 2 - editorRect.left - panOffset.x) / zoom,
-              y: (endRect.top + endRect.height / 2 - editorRect.top - panOffset.y) / zoom,
-            }
+          // Include all required properties in the connection
+          const connectionId = addConnection({
+            start: connecting,
+            end: id,
+            startPos: startPinPos,
+            endPos: endPinPos,
+            startPinIndex: connectingPinIndex,
+            endPinIndex: endPinIndex,
+            startPinType: startPin.type,
+            endPinType: endPin.type,
+          });
 
-            const connectionId = addConnection({
-              start: connecting,
-              end: id,
-              startPos,
-              endPos,
-            })
+          // Store connection positions and pin types for rendering
+          setConnectionPositions((prev) => ({
+            ...prev,
+            [connectionId]: {
+              startPos: startPinPos,
+              endPos: endPinPos,
+              startPinType: startPin.type,
+              endPinType: endPin.type,
+            },
+          }))
 
-            // Store connection positions for rendering
-            setConnectionPositions((prev) => ({
-              ...prev,
-              [connectionId]: { startPos, endPos },
-            }))
+          // Update component connections
+          updateComponent(connecting, {
+            connections: [...startComponent.connections, id],
+          })
 
-            // Update component connections
-            updateComponent(connecting, {
-              connections: [...startComponent.connections, id],
-            })
-
-            updateComponent(id, {
-              connections: [...endComponent.connections, connecting],
-            })
-          }
+          updateComponent(id, {
+            connections: [...endComponent.connections, connecting],
+          })
         }
 
         setConnecting(null)
+        setConnectingPinIndex(-1)
         setConnectionStart(null)
       } else {
         setSelectedComponent(id)
       }
     },
-    [connecting, schematicComponents, addConnection, updateComponent, zoom, panOffset],
+    [
+      connecting,
+      connectingPinIndex,
+      schematicComponents,
+      addConnection,
+      updateComponent,
+      mousePosition,
+    ],
   )
 
+  // Helper function to find the closest pin on a component
+  const findClosestPinIndex = (component, position) => {
+    if (!component || !component.footprint || !component.footprint.pins || component.footprint.pins.length === 0) {
+      return 0;
+    }
+
+    let closestIndex = 0;
+    let minDistance = Number.POSITIVE_INFINITY;
+
+    component.footprint.pins.forEach((pin, index) => {
+      // Calculate the pin position including rotation
+      const rotationRad = (component.rotation * Math.PI) / 180;
+      const pinRelativeX = pin.x * 10;
+      const pinRelativeY = pin.y * 10;
+      
+      // Apply rotation
+      const rotatedX = pinRelativeX * Math.cos(rotationRad) - pinRelativeY * Math.sin(rotationRad);
+      const rotatedY = pinRelativeX * Math.sin(rotationRad) + pinRelativeY * Math.cos(rotationRad);
+      
+      // Calculate absolute position
+      const pinX = component.x + rotatedX;
+      const pinY = component.y + rotatedY;
+
+      const distance = Math.sqrt(Math.pow(pinX - position.x, 2) + Math.pow(pinY - position.y, 2));
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    return closestIndex;
+  };
+
   const startConnection = useCallback(
-    (id: string, e: React.MouseEvent) => {
+    (id: string, pinIndex: number, e: React.MouseEvent) => {
       e.stopPropagation()
       setConnecting(id)
+      setConnectingPinIndex(pinIndex)
 
-      const componentEl = document.getElementById(id)
-      const editorRect = editorRef.current?.getBoundingClientRect()
-
-      if (componentEl && editorRect) {
-        const rect = componentEl.getBoundingClientRect()
-        setConnectionStart({
-          x: (rect.left + rect.width / 2 - editorRect.left - panOffset.x) / zoom,
-          y: (rect.top + rect.height / 2 - editorRect.top - panOffset.y) / zoom,
-        })
+      const component = schematicComponents.find((c) => c.id === id)
+      if (component && component.footprint && component.footprint.pins) {
+        const pin = component.footprint.pins[pinIndex]
+        
+        // Get the exact position of the pin, accounting for rotation
+        const pinPos = calculateRotatedPinPosition(component, pin)
+        setConnectionStart(pinPos)
       }
     },
-    [zoom, panOffset],
+    [schematicComponents],
   )
 
   const rotateComponent = useCallback(
@@ -453,32 +416,38 @@ export default function SchematicEditor() {
   // Update connection positions when components move
   const updateConnectionPositions = useCallback(() => {
     connections.forEach((connection) => {
-      const startComponentEl = document.getElementById(connection.start)
-      const endComponentEl = document.getElementById(connection.end)
-      const editorRect = editorRef.current?.getBoundingClientRect()
-
-      if (startComponentEl && endComponentEl && editorRect) {
-        const startRect = startComponentEl.getBoundingClientRect()
-        const endRect = endComponentEl.getBoundingClientRect()
-
-        const startPos = {
-          x: (startRect.left + startRect.width / 2 - editorRect.left - panOffset.x) / zoom,
-          y: (startRect.top + startRect.height / 2 - editorRect.top - panOffset.y) / zoom,
+      const startComponent = schematicComponents.find((c) => c.id === connection.start)
+      const endComponent = schematicComponents.find((c) => c.id === connection.end)
+  
+      if (startComponent && endComponent) {
+        // These indices MUST be stored in the connection object
+        const startPinIndex = connection.startPinIndex ?? 0
+        const endPinIndex = connection.endPinIndex ?? 0
+  
+        // Get the actual pins
+        const startPin = startComponent.footprint?.pins?.[startPinIndex]
+        const endPin = endComponent.footprint?.pins?.[endPinIndex]
+  
+        if (startPin && endPin) {
+          // Recalculate exact pin positions with current component positions and rotations
+          const startPos = calculateRotatedPinPosition(startComponent, startPin)
+          const endPos = calculateRotatedPinPosition(endComponent, endPin)
+  
+          // Update the connection positions with these exact pin locations
+          setConnectionPositions((prev) => ({
+            ...prev,
+            [connection.id]: {
+              startPos,
+              endPos,
+              startPinType: startPin.type,
+              endPinType: endPin.type,
+            },
+          }))
         }
-
-        const endPos = {
-          x: (endRect.left + endRect.width / 2 - editorRect.left - panOffset.x) / zoom,
-          y: (endRect.top + endRect.height / 2 - editorRect.top - panOffset.y) / zoom,
-        }
-
-        setConnectionPositions((prev) => ({
-          ...prev,
-          [connection.id]: { startPos, endPos },
-        }))
       }
     })
-  }, [connections, zoom, panOffset])
-
+  }, [connections, schematicComponents])
+  
   // Update connection positions when components change or move
   useEffect(() => {
     const timeoutId = setTimeout(updateConnectionPositions, 100)
@@ -490,7 +459,20 @@ export default function SchematicEditor() {
       .map((connection) => {
         const positions = connectionPositions[connection.id]
         if (!positions) return null
-
+  
+        // Set a default connection style
+        let strokeColor = "#3b82f6" // Default blue
+        let strokeWidth = "2"
+        let strokeDasharray = ""
+        
+        // Set different styles based on pin types
+        if (positions.startPinType === "positive" && positions.endPinType === "negative") {
+          strokeColor = "#10b981" // Green for positive to negative
+        } else if (positions.startPinType === "negative" && positions.endPinType === "positive") {
+          strokeColor = "#10b981" // Green for negative to positive
+        }
+  
+        // Draw the line using the exact pin positions
         return (
           <line
             key={connection.id}
@@ -498,15 +480,15 @@ export default function SchematicEditor() {
             y1={positions.startPos.y}
             x2={positions.endPos.x}
             y2={positions.endPos.y}
-            stroke="#3b82f6"
-            strokeWidth="2"
-            strokeDasharray="5,5"
+            stroke={strokeColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={strokeDasharray}
           />
         )
       })
       .filter(Boolean)
   }, [connections, connectionPositions])
-
+  
   const inProgressConnection = useMemo(() => {
     if (!connecting || !connectionStart) return null
     return (
@@ -522,11 +504,22 @@ export default function SchematicEditor() {
     )
   }, [connecting, connectionStart, mousePosition])
 
-  const handleEditorClick = useCallback(() => {
-    setSelectedComponent(null)
-    setConnecting(null)
-    setConnectionStart(null)
-  }, [])
+  const handleEditorClick = useCallback(
+    (e) => {
+      // If we're connecting, check if we clicked on a component's pin
+      if (connecting && connectionStart) {
+        // We'll handle this in the component's click handler
+        // Just keep the connection state active
+        return
+      }
+
+      setSelectedComponent(null)
+      setConnecting(null)
+      setConnectingPinIndex(-1)
+      setConnectionStart(null)
+    },
+    [connecting, connectionStart],
+  )
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -624,7 +617,7 @@ export default function SchematicEditor() {
 
       <div
         ref={drop}
-        className={`relative w-full h-full overflow-auto ${showGrid ? "bg-grid-pattern" : "bg-background"}`}
+        className={`relative w-full h-full overflow-auto ${showGrid ? "dark:bg-grid-pattern-dark bg-grid-pattern" : "bg-background"}`}
         onClick={handleEditorClick}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
@@ -654,6 +647,7 @@ export default function SchematicEditor() {
               component={component}
               isSelected={selectedComponent === component.id}
               isConnecting={connecting === component.id}
+              isAnyConnecting={!!connecting}
               onSelect={handleComponentClick}
               onStartConnection={startConnection}
               onRotate={rotateComponent}
@@ -668,4 +662,3 @@ export default function SchematicEditor() {
     </div>
   )
 }
-

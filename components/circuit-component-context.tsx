@@ -5,23 +5,18 @@ import { createContext, useContext, useState, useCallback, useEffect } from "rea
 import { v4 as uuidv4 } from "uuid"
 import { fetchComponentsFromAPI } from "../lib/api-service"
 
-
-
 const fetchComponentData = async (): Promise<Component[]> => {
   try {
-    
-    const kicadResponse = await fetch('/component-definitions.json');
-    if (!kicadResponse.ok) throw new Error('Failed to fetch KiCad component data');
-    
-    const kicadData = await kicadResponse.json();
-    
-   
-    const apiData = await fetchComponentsFromAPI();
-    
-   
-    const combined = [...kicadData, ...apiData];
-    const uniqueComponents = Array.from(new Map(combined.map(item => [item.name, item])).values());
-    
+    const kicadResponse = await fetch("/component-definitions.json")
+    if (!kicadResponse.ok) throw new Error("Failed to fetch KiCad component data")
+
+    const kicadData = await kicadResponse.json()
+
+    const apiData = await fetchComponentsFromAPI()
+
+    const combined = [...kicadData, ...apiData]
+    const uniqueComponents = Array.from(new Map(combined.map((item) => [item.name, item])).values())
+
     return uniqueComponents.map((item: any) => ({
       id: uuidv4(),
       name: item.name,
@@ -37,7 +32,7 @@ const fetchComponentData = async (): Promise<Component[]> => {
         height: item.footprint?.height || 2,
         pins: item.footprint?.pins || [],
         svgPath: item.footprint?.svgPath,
-        schematicSymbol: item.footprint?.schematicSymbol
+        schematicSymbol: item.footprint?.schematicSymbol,
       },
       ...(item.resistance && { resistance: item.resistance }),
       ...(item.capacitance && { capacitance: item.capacitance }),
@@ -46,14 +41,14 @@ const fetchComponentData = async (): Promise<Component[]> => {
       ...(item.current && { current: item.current }),
       ...(item.keywords && { keywords: item.keywords }),
       ...(item.datasheet && { datasheet: item.datasheet }),
-    }));
+    }))
   } catch (error) {
-    console.error('Error loading component data:', error);
-    console.log('Falling back to API data only');
-    const apiData = await fetchComponentsFromAPI();
-    return apiData;
+    console.error("Error loading component data:", error)
+    console.log("Falling back to API data only")
+    const apiData = await fetchComponentsFromAPI()
+    return apiData
   }
-};
+}
 // Define types
 interface Pin {
   x: number
@@ -72,9 +67,13 @@ interface Footprint {
 export type ComponentType =
   | "resistor"
   | "capacitor"
+  | "polarized_capacitor"
   | "inductor"
   | "diode"
+  | "zener_diode"
   | "transistor"
+  | "pnp_transistor"
+  | "mosfet"
   | "ic"
   | "led"
   | "switch"
@@ -82,12 +81,19 @@ export type ComponentType =
   | "ammeter"
   | "oscilloscope"
   | "power_supply"
+  | "voltage_source"
+  | "current_source"
+  | "battery"
+  | "battery_holder"
   | "ground"
   | "connector"
   | "potentiometer"
   | "fuse"
   | "relay"
   | "transformer"
+  | "crystal"
+  | "speaker"
+  | "microphone"
 
 export interface Component {
   id: string
@@ -109,15 +115,23 @@ export interface Component {
   inductance?: number
   keywords?: string[]
   datasheet?: string
-  
 }
-
+// Add these to the Connection interface
 interface Connection {
   id: string
   start: string
   end: string
   startPos: { x: number; y: number }
   endPos: { x: number; y: number }
+  startPinIndex?: number
+  endPinIndex?: number
+  startPinType?: string
+  endPinType?: string
+  // Add these new properties
+  isValid?: boolean
+  voltage?: number
+  current?: number
+  segments?: { x: number; y: number }[] // For curved connections
 }
 
 interface CircuitComponentContextType {
@@ -156,11 +170,11 @@ const defaultComponents: Component[] = [
       width: 2,
       height: 1,
       pins: [
-        { x: -1, y: 0, type: "other" },
-        { x: 1, y: 0, type: "other" }
+        { x: -1, y: 0, type: "positive" },
+        { x: 1, y: 0, type: "negative" },
       ],
-      schematicSymbol: "M-1,0 L-0.7,0 L-0.5,0.3 L-0.3,-0.3 L-0.1,0.3 L0.1,-0.3 L0.3,0.3 L0.5,-0.3 L0.7,0 L1,0"
-    }
+      schematicSymbol: "M-1,0 L-0.7,0 L-0.5,0.3 L-0.3,-0.3 L-0.1,0.3 L0.1,-0.3 L0.3,0.3 L0.5,-0.3 L0.7,0 L1,0",
+    },
   },
   {
     id: uuidv4(),
@@ -176,16 +190,85 @@ const defaultComponents: Component[] = [
       width: 2,
       height: 1,
       pins: [
-        { x: -1, y: 0, type: "other" },
-        { x: 1, y: 0, type: "other" }
+        { x: -1, y: 0, type: "positive" },
+        { x: 1, y: 0, type: "negative" },
       ],
-      schematicSymbol: "M-1,0 L-0.3,0 M-0.3,-0.6 L-0.3,0.6 M0.3,-0.6 L0.3,0.6 M0.3,0 L1,0"
-    }
-  }
-];
-
-// Load component data from the public folder (where we'll store our pre-processed JSON)
-
+      schematicSymbol: "M-1,0 L-0.3,0 M-0.3,-0.6 L-0.3,0.6 M0.3,-0.6 L0.3,0.6 M0.3,0 L1,0",
+    },
+  },
+  {
+    id: uuidv4(),
+    name: "Battery 9V",
+    type: "battery",
+    value: "9V",
+    x: 0,
+    y: 0,
+    rotation: 0,
+    connections: [],
+    voltage: 9,
+    footprint: {
+      width: 2,
+      height: 1,
+      pins: [
+        { x: -1, y: 0, type: "negative" },
+        { x: 1, y: 0, type: "positive" },
+      ],
+    },
+  },
+  {
+    id: uuidv4(),
+    name: "Transformer",
+    type: "transformer",
+    x: 0,
+    y: 0,
+    rotation: 0,
+    connections: [],
+    footprint: {
+      width: 3,
+      height: 2,
+      pins: [
+        { x: -1.5, y: -0.5, type: "positive" },
+        { x: -1.5, y: 0.5, type: "negative" },
+        { x: 1.5, y: -0.5, type: "positive" },
+        { x: 1.5, y: 0.5, type: "negative" },
+      ],
+    },
+  },
+  {
+    id: uuidv4(),
+    name: "Voltmeter",
+    type: "voltmeter",
+    x: 0,
+    y: 0,
+    rotation: 0,
+    connections: [],
+    footprint: {
+      width: 2,
+      height: 2,
+      pins: [
+        { x: -1, y: 0, type: "positive" },
+        { x: 1, y: 0, type: "negative" },
+      ],
+    },
+  },
+  {
+    id: uuidv4(),
+    name: "Ammeter",
+    type: "ammeter",
+    x: 0,
+    y: 0,
+    rotation: 0,
+    connections: [],
+    footprint: {
+      width: 2,
+      height: 2,
+      pins: [
+        { x: -1, y: 0, type: "positive" },
+        { x: 1, y: 0, type: "negative" },
+      ],
+    },
+  },
+]
 
 export function CircuitComponentProvider({ children }: { children: React.ReactNode }) {
   const [components, setComponents] = useState<Component[]>([])
@@ -197,13 +280,26 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
 
   useEffect(() => {
     const loadComponents = async () => {
-      setIsLoading(true);
-      const data = await fetchComponentData();
-      setAvailableComponents(data);
-      setIsLoading(false);
-    };
-    loadComponents();
-  }, []);
+      setIsLoading(true)
+      try {
+        const data = await fetchComponentData()
+        // Add default components if they don't exist in the fetched data
+        const combinedData = [...data]
+        defaultComponents.forEach((defaultComp) => {
+          if (!data.some((comp) => comp.name === defaultComp.name)) {
+            combinedData.push({ ...defaultComp, id: uuidv4() })
+          }
+        })
+        setAvailableComponents(combinedData)
+      } catch (error) {
+        console.error("Error loading components:", error)
+        setAvailableComponents(defaultComponents)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadComponents()
+  }, [])
 
   const addComponent = useCallback((component: Omit<Component, "id">) => {
     const id = uuidv4()
@@ -217,10 +313,27 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
   }, [])
 
   const updateComponent = useCallback((id: string, updates: Partial<Component>) => {
+    // Protect connections from being modified in case of errors
+    if ('connections' in updates && updates.connections === null) {
+      // If connections are being reset to null due to an error, skip this update
+      console.warn(`Prevented connection reset for component ${id} due to error`)
+      
+      // Create a new updates object without the connections property
+      const { connections, ...safeUpdates } = updates
+      
+      // Only apply the safe updates
+      setComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
+      setSchematicComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
+      setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
+      return
+    }
+    
+    // Normal update path
     setComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
     setSchematicComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
     setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
   }, [])
+  
 
   const updatePcbComponent = useCallback((id: string, updates: Partial<Component>) => {
     setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
@@ -235,14 +348,29 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
     setConnections((prev) => prev.filter((conn) => conn.start !== id && conn.end !== id))
   }, [])
 
-  const moveComponentToPcb = useCallback((id: string) => {
-    const component = schematicComponents.find((comp) => comp.id === id)
-    if (component && !pcbComponents.some((comp) => comp.id === id)) {
-      // Add to PCB components
-      setPcbComponents((prev) => [...prev, component])
-      console.log(`Component ${component.name} moved to PCB view`)
-    }
-  }, [schematicComponents, pcbComponents])
+  const moveComponentToPcb = useCallback(
+    (id: string) => {
+      const component = schematicComponents.find((comp) => comp.id === id)
+      if (component && !pcbComponents.some((comp) => comp.id === id)) {
+        // Create a deep copy of the component with its connections preserved
+        const componentWithConnections = {
+          ...component,
+          connections: [...component.connections] // Ensure connections array is preserved
+        }
+        
+        // Add to PCB components with connections intact
+        setPcbComponents((prev) => [...prev, componentWithConnections])
+        
+        // No need to duplicate connections - they're shared between views
+        // The connections state is already being used by both views
+        
+        console.log(`Component ${component.name} moved to PCB view with ${component.connections.length} connections`)
+      }
+    },
+    [schematicComponents, pcbComponents],
+  );
+  
+  
 
   const addConnection = useCallback((connection: Omit<Connection, "id">) => {
     const id = uuidv4()
@@ -262,18 +390,22 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
     setConnections([])
   }, [])
 
-  const searchComponents = useCallback((query: string) => {
-    if (!query) return [];
-    const lowerQuery = query.toLowerCase();
-    
-    return availableComponents.filter(comp => 
-      comp.name.toLowerCase().includes(lowerQuery) ||
-      comp.type.toLowerCase().includes(lowerQuery) ||
-      comp.value?.toLowerCase().includes(lowerQuery) ||
-      comp.description?.toLowerCase().includes(lowerQuery) ||
-      comp.keywords?.some(kw => kw.toLowerCase().includes(lowerQuery))
-    );
-  }, [availableComponents]);
+  const searchComponents = useCallback(
+    (query: string) => {
+      if (!query) return []
+      const lowerQuery = query.toLowerCase()
+
+      return availableComponents.filter(
+        (comp) =>
+          comp.name.toLowerCase().includes(lowerQuery) ||
+          comp.type.toLowerCase().includes(lowerQuery) ||
+          comp.value?.toLowerCase().includes(lowerQuery) ||
+          comp.description?.toLowerCase().includes(lowerQuery) ||
+          comp.keywords?.some((kw) => kw.toLowerCase().includes(lowerQuery)),
+      )
+    },
+    [availableComponents],
+  )
 
   return (
     <CircuitComponentContext.Provider
@@ -292,7 +424,7 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
         addConnection,
         removeConnection,
         clearConnections,
-        searchComponents
+        searchComponents,
       }}
     >
       {children}

@@ -3,203 +3,371 @@
 import type React from "react"
 
 // Custom icons for electronic components
+
+// Resistor with zigzag pattern (traditional circuit theory style)
 export const ResistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <path d="M2 12h5" />
-    <path d="M17 12h5" />
-    <rect x="7" y="9" width="10" height="6" rx="2" />
+    <path d="M-1,0 L-0.7,0 L-0.5,0.3 L-0.3,-0.3 L-0.1,0.3 L0.1,-0.3 L0.3,0.3 L0.5,-0.3 L0.7,0 L1,0" />
   </svg>
 )
 
+// Capacitor (traditional circuit theory style)
 export const CapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <path d="M2 12h7" />
-    <path d="M15 12h7" />
-    <path d="M9 6v12" />
-    <path d="M15 6v12" />
+    <path d="M-1,0 L-0.3,0" />
+    <path d="M-0.3,-0.6 L-0.3,0.6" />
+    <path d="M0.3,-0.6 L0.3,0.6" />
+    <path d="M0.3,0 L1,0" />
   </svg>
 )
 
+// Polarized Capacitor (electrolytic)
+export const PolarizedCapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M-1,0 L-0.3,0" />
+    <path d="M-0.3,-0.6 L-0.3,0.6" />
+    <path d="M0.3,-0.6 L0.3,0.6" />
+    <path d="M0.3,0 L1,0" />
+    <path d="M-0.5,-0.3 L-0.5,0.3" />
+    <path d="M-0.6,0 L-0.4,0" />
+  </svg>
+)
+
+// Inductor with loops (traditional circuit theory style)
 export const InductorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <path d="M2 12h4" />
-    <path d="M18 12h4" />
-    <path d="M6 12c0 0 1.5 -2 3 -2s3 4 6 4 3 -2 3 -2" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M-0.7,0 C-0.7,0.3 -0.5,0.3 -0.5,0" />
+    <path d="M-0.5,0 C-0.5,0.3 -0.3,0.3 -0.3,0" />
+    <path d="M-0.3,0 C-0.3,0.3 -0.1,0.3 -0.1,0" />
+    <path d="M-0.1,0 C-0.1,0.3 0.1,0.3 0.1,0" />
+    <path d="M0.1,0 C0.1,0.3 0.3,0.3 0.3,0" />
+    <path d="M0.3,0 C0.3,0.3 0.5,0.3 0.5,0" />
+    <path d="M0.5,0 L1,0" />
   </svg>
 )
 
+// Diode (traditional circuit theory style)
 export const DiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <path d="M4 12h6" />
-    <path d="M14 12h6" />
-    <polygon points="10 8 14 12 10 16" />
-    <line x1="14" y1="8" x2="14" y2="16" />
+    <path d="M-1,0 L-0.3,0" />
+    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
+    <path d="M0.3,-0.4 L0.3,0.4" />
+    <path d="M0.3,0 L1,0" />
   </svg>
 )
 
+// Zener Diode
+export const ZenerDiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M-1,0 L-0.3,0" />
+    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
+    <path d="M0.3,-0.4 L0.3,0.4" />
+    <path d="M0.3,0.4 L0.5,0.4" />
+    <path d="M0.3,-0.4 L0.1,-0.4" />
+    <path d="M0.3,0 L1,0" />
+  </svg>
+)
+
+// LED (Light Emitting Diode)
+export const LEDIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M-1,0 L-0.3,0" />
+    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
+    <path d="M0.3,-0.4 L0.3,0.4" />
+    <path d="M0.3,0 L1,0" />
+    <path d="M0.4,-0.2 L0.6,-0.4" />
+    <path d="M0.6,-0.2 L0.8,-0.4" />
+  </svg>
+)
+
+// Transistor (BJT - NPN)
 export const TransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <circle cx="12" cy="12" r="6" />
-    <line x1="12" y1="6" x2="12" y2="2" />
-    <line x1="6" y1="18" x2="6" y2="22" />
-    <line x1="18" y1="18" x2="18" y2="22" />
+    <circle cx="0" cy="0" r="0.5" />
+    <path d="M-0.5,0.3 L0.3,0.3" />
+    <path d="M-0.5,-0.3 L0.3,-0.3" />
+    <path d="M-1,0 L-0.5,0" />
+    <path d="M-0.5,-0.5 L-0.5,0.5" />
+    <path d="M0.3,0.3 L0.7,0.7" />
+    <path d="M0.3,-0.3 L0.7,-0.7" />
+    <path d="M0.7,0.7 L1,0.7" />
+    <path d="M0.7,-0.7 L1,-0.7" />
   </svg>
 )
 
+// PNP Transistor
+export const PNPTransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="0" cy="0" r="0.5" />
+    <path d="M-0.5,0.3 L0.3,0.3" />
+    <path d="M-0.5,-0.3 L0.3,-0.3" />
+    <path d="M-1,0 L-0.5,0" />
+    <path d="M-0.5,-0.5 L-0.5,0.5" />
+    <path d="M0.3,0.3 L0.7,0.7" />
+    <path d="M0.3,-0.3 L0.7,-0.7" />
+    <path d="M0.7,0.7 L1,0.7" />
+    <path d="M0.7,-0.7 L1,-0.7" />
+    <path d="M0.3,0.3 L0.5,0.1" />
+    <path d="M0.3,-0.3 L0.5,-0.1" />
+  </svg>
+)
+
+// MOSFET Transistor
+export const MOSFETIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M-1,0 L-0.5,0" />
+    <path d="M-0.5,-0.5 L-0.5,0.5" />
+    <path d="M-0.5,0 L-0.3,0" />
+    <path d="M-0.3,-0.5 L-0.3,0.5" />
+    <path d="M-0.3,-0.3 L0.3,-0.3 L0.3,-0.7 L0.7,-0.7 L0.7,-0.3" />
+    <path d="M-0.3,0.3 L0.3,0.3 L0.3,0.7 L0.7,0.7 L0.7,0.3" />
+    <path d="M0.7,-0.7 L1,-0.7" />
+    <path d="M0.7,0.7 L1,0.7" />
+    <path d="M0.7,0 L1,0" />
+  </svg>
+)
+
+// Integrated Circuit (IC)
 export const ChipIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <rect x="5" y="5" width="14" height="14" rx="2" />
-    <line x1="9" y1="2" x2="9" y2="5" />
-    <line x1="15" y1="2" x2="15" y2="5" />
-    <line x1="9" y1="19" x2="9" y2="22" />
-    <line x1="15" y1="19" x2="15" y2="22" />
-    <line x1="2" y1="9" x2="5" y2="9" />
-    <line x1="2" y1="15" x2="5" y2="15" />
-    <line x1="19" y1="9" x2="22" y2="9" />
-    <line x1="19" y1="15" x2="22" y2="15" />
+    <rect x="-0.5" y="-0.5" width="1" height="1" />
+    <path d="M-1,0.3 L-0.5,0.3" />
+    <path d="M-1,0 L-0.5,0" />
+    <path d="M-1,-0.3 L-0.5,-0.3" />
+    <path d="M0.5,0.3 L1,0.3" />
+    <path d="M0.5,0 L1,0" />
+    <path d="M0.5,-0.3 L1,-0.3" />
+    <circle cx="-0.7" cy="-0.7" r="0.1" />
   </svg>
 )
 
-export const LedIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <circle cx="12" cy="12" r="5" />
-    <path d="M12 7v-4" />
-    <path d="M12 21v-4" />
-    <path d="M16 12h4" />
-    <path d="M4 12h4" />
-    <path d="M15 9l2.5-2.5" />
-    <path d="M6.5 17.5l2.5-2.5" />
-    <path d="M9 15l-2.5 2.5" />
-    <path d="M17.5 6.5l-2.5 2.5" />
-  </svg>
-)
-
+// Switch
 export const SwitchIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <path d="M2 12h6" />
-    <path d="M16 12h6" />
-    <circle cx="8" cy="12" r="2" />
-    <path d="M8 12l8-5" />
+    <path d="M-1,0 L-0.5,0" />
+    <circle cx="-0.3" cy="0" r="0.2" />
+    <path d="M-0.3,0 L0.5,-0.3" />
+    <circle cx="0.3" cy="0" r="0.2" />
+    <path d="M0.3,0 L1,0" />
   </svg>
 )
 
+// Voltmeter (traditional circuit theory style)
 export const VoltmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
+    {...props}
+    viewBox="-1 -1 2 2"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="0.1"
     strokeLinecap="round"
     strokeLinejoin="round"
-    {...props}
   >
-    <circle cx="12" cy="12" r="8" />
-    <path d="M12 8v4l2 2" />
-    <path d="M2 12h2" />
-    <path d="M20 12h2" />
-    <path d="M12 2v2" />
-    <path d="M12 20v2" />
-    <path d="M8 16l-1 1" />
-    <path d="M16 16l1 1" />
-    <path d="M8 8l-1-1" />
-    <path d="M16 8l1-1" />
-    <path d="M9 12h6" />
+    <circle cx="0" cy="0" r="0.7" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M0.7,0 L1,0" />
+    <text x="0" y="0.15" fontSize="0.5" textAnchor="middle" fill="currentColor">V</text>
   </svg>
 )
 
+// Ammeter (traditional circuit theory style)
 export const AmmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="0" cy="0" r="0.7" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M0.7,0 L1,0" />
+    <text x="0" y="0.15" fontSize="0.5" textAnchor="middle" fill="currentColor">A</text>
+  </svg>
+)
+
+// Oscilloscope
+export const OscilloscopeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="-0.7" y="-0.7" width="1.4" height="1.4" rx="0.2" />
+    <circle cx="0" cy="0" r="0.5" />
+    <path d="M-0.4,0 L-0.2,-0.2 L0,0 L0.2,0.2 L0.4,0" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M0.7,0 L1,0" />
+  </svg>
+)
+
+// Battery (traditional circuit theory style)
+export const BatteryIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M-1,0 L-0.6,0" />
+    <path d="M-0.6,-0.4 L-0.6,0.4" />
+    <path d="M-0.3,-0.7 L-0.3,0.7" />
+    <path d="M0.3,-0.4 L0.3,0.4" />
+    <path d="M0.3,0 L1,0" />
+  </svg>
+)
+
+// Battery Holder
+export const BatteryHolderIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="-0.7" y="-0.4" width="1.4" height="0.8" rx="0.1" />
+    <path d="M-0.5,-0.4 L-0.5,-0.6" />
+    <path d="M0.5,-0.4 L0.5,-0.6" />
+    <path d="M-0.3,-0.1 L-0.3,0.1" />
+    <path d="M0,-0.2 L0,0.2" />
+    <path d="M0.3,-0.1 L0.3,0.1" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M0.7,0 L1,0" />
+  </svg>
+)
+
+// Voltage Source (traditional circuit theory style)
+export const VoltageSourceIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="-1 -1 2 2"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="0.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="0" cy="0" r="0.7" />
+    <path d="M-1,0 L-0.7,0" />
+    <path d="M0.7,0 L1,0" />
+    <path d="M-0.2,-0.2 L-0.2,0.2" />
+    <path d="M0.2,-0.2 L0.2,0.2" />
+    <path d="M-0.2,0 L0.2,0" />
+  </svg>
+)
+
+// Current Source (traditional circuit theory style)
+export const CurrentSourceIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
     height="24"
@@ -212,52 +380,14 @@ export const AmmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <circle cx="12" cy="12" r="8" />
-    <path d="M12 8v4l2 2" />
-    <path d="M9 12h6" />
-    <path d="M12 16v2" />
-    <path d="M12 6v2" />
+    <path d="M12 8v8" />
+    <path d="M9 11l3-3 3 3" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
   </svg>
 )
 
-export const OscilloscopeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <rect x="2" y="4" width="20" height="16" rx="2" />
-    <path d="M4 12h2l2-5 3 10 3-7 2 2h4" />
-  </svg>
-)
-
-export const PowerSupplyIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M6 7h12v10H6z" />
-    <line x1="9" y1="4" x2="9" y2="7" />
-    <line x1="15" y1="4" x2="15" y2="7" />
-    <line x1="12" y1="17" x2="12" y2="20" />
-    <line x1="6" y1="12" x2="18" y2="12" />
-  </svg>
-)
-
+// Ground (traditional circuit theory style)
 export const GroundIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -278,6 +408,7 @@ export const GroundIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
+// Connector
 export const ConnectorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -299,6 +430,7 @@ export const ConnectorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
+// Potentiometer (variable resistor)
 export const PotentiometerIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -312,14 +444,15 @@ export const PotentiometerIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <circle cx="12" cy="12" r="7" />
-    <path d="M12 5v14" />
-    <path d="M12 12l5-3" />
-    <path d="M2 12h3" />
-    <path d="M19 12h3" />
+    <path d="M2 12h4" />
+    <path d="M18 12h4" />
+    <path d="M6 12l1 3 2-6 2 6 2-6 2 6 2-6 1 3" />
+    <path d="M12 12v-6" />
+    <path d="M12 6l-3 3 6 0" />
   </svg>
 )
 
+// Fuse
 export const FuseIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -340,6 +473,7 @@ export const FuseIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
+// Relay
 export const RelayIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -363,7 +497,8 @@ export const RelayIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
-export const TransformerIcon = (props: React.SVGProps<SVGSVGElement>) => (
+// Crystal/Oscillator
+export const CrystalIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -378,14 +513,14 @@ export const TransformerIcon = (props: React.SVGProps<SVGSVGElement>) => (
   >
     <path d="M2 12h4" />
     <path d="M18 12h4" />
-    <circle cx="8" cy="12" r="2" />
-    <circle cx="16" cy="12" r="2" />
-    <path d="M8 10v-4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v4" />
-    <path d="M8 14v4c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-4" />
+    <rect x="6" y="6" width="12" height="12" rx="1" />
+    <line x1="9" y1="6" x2="9" y2="18" />
+    <line x1="15" y1="6" x2="15" y2="18" />
   </svg>
 )
 
-export const BuzzerIcon = (props: React.SVGProps<SVGSVGElement>) => (
+// Speaker
+export const SpeakerIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -398,13 +533,40 @@ export const BuzzerIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <circle cx="12" cy="12" r="6" />
-    <path d="M12 6v12" />
-    <path d="M6 12h12" />
-    <path d="M16 8l4-4" />
-    <path d="M16 16l4 4" />
-    <path d="M8 8l-4-4" />
-    <path d="M8 16l-4 4" />
+    <path d="M2 12h4l6-6v12l-6-6" />
+    <path d="M15 9c1 1 1 5 0 6" />
+    <path d="M18 7c2 2 2 8 0 10" />
+  </svg>
+)
+export const TransformerIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} viewBox="0 0 24 24" stroke="currentColor" fill="none">
+    {/* Primary Coil */}
+    <path d="M3 12h3m-3 0h3m-3 0V6m0 6v6m0-6h18m-18 0h18m0 0V6m0 6v6m0-6H3m18 0H3" 
+          strokeWidth="1.5" strokeLinecap="round"/>
+    {/* Secondary Coil */}
+    <path d="M21 12h-3m3 0h-3m3 0V6m0 6v6" 
+          strokeWidth="1.5" strokeLinecap="round"/>
+    {/* Core Line */}
+    <line x1="12" y1="2" x2="12" y2="22" strokeWidth="2"/>
+  </svg>
+)
+// Microphone
+export const MicrophoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M5 10a7 7 0 0 0 14 0" />
+    <line x1="12" y1="19" x2="12" y2="22" />
   </svg>
 )
 
@@ -415,16 +577,24 @@ export const getIconForType = (type: string): React.ElementType => {
       return ResistorIcon
     case "capacitor":
       return CapacitorIcon
+    case "polarized_capacitor":
+      return PolarizedCapacitorIcon
     case "inductor":
       return InductorIcon
     case "diode":
       return DiodeIcon
+    case "zener_diode":
+      return ZenerDiodeIcon
+    case "led":
+      return LEDIcon
     case "transistor":
       return TransistorIcon
+    case "pnp_transistor":
+      return PNPTransistorIcon
+    case "mosfet":
+      return MOSFETIcon
     case "ic":
       return ChipIcon
-    case "led":
-      return LedIcon
     case "switch":
       return SwitchIcon
     case "voltmeter":
@@ -433,8 +603,17 @@ export const getIconForType = (type: string): React.ElementType => {
       return AmmeterIcon
     case "oscilloscope":
       return OscilloscopeIcon
+    case "battery":
+      return BatteryIcon
+    case "battery_holder":
+      return BatteryHolderIcon
+    case "transformer":
+      return TransformerIcon
+    case "voltage_source":
     case "power_supply":
-      return PowerSupplyIcon
+      return VoltageSourceIcon
+    case "current_source":
+      return CurrentSourceIcon
     case "ground":
       return GroundIcon
     case "connector":
@@ -445,10 +624,13 @@ export const getIconForType = (type: string): React.ElementType => {
       return FuseIcon
     case "relay":
       return RelayIcon
-    case "transformer":
-      return TransformerIcon
-    case "buzzer":
-      return BuzzerIcon
+    case "crystal":
+    case "oscillator":
+      return CrystalIcon
+    case "speaker":
+      return SpeakerIcon
+    case "microphone":
+      return MicrophoneIcon
     default:
       return ChipIcon
   }
@@ -461,12 +643,23 @@ export const getComponentTypeFromName = (name: string): string => {
   if (lowerName.includes("resistor") || lowerName.includes("r_")) {
     return "resistor"
   } else if (lowerName.includes("capacitor") || lowerName.includes("c_")) {
+    if (lowerName.includes("electrolytic") || lowerName.includes("polar")) {
+      return "polarized_capacitor"
+    }
     return "capacitor"
   } else if (lowerName.includes("inductor") || lowerName.includes("l_")) {
     return "inductor"
   } else if (lowerName.includes("diode") || lowerName.includes("d_")) {
+    if (lowerName.includes("zener")) {
+      return "zener_diode"
+    }
     return "diode"
   } else if (lowerName.includes("transistor") || lowerName.includes("q_")) {
+    if (lowerName.includes("pnp")) {
+      return "pnp_transistor"
+    } else if (lowerName.includes("mosfet") || lowerName.includes("fet")) {
+      return "mosfet"
+    }
     return "transistor"
   } else if (lowerName.includes("ic")) {
     return "ic"
@@ -480,9 +673,18 @@ export const getComponentTypeFromName = (name: string): string => {
     return "ammeter"
   } else if (lowerName.includes("oscilloscope")) {
     return "oscilloscope"
-  } else if (lowerName.includes("power")) {
-    return "power_supply"
-  } else if (lowerName.includes("gnd")) {
+  } else if (lowerName.includes("battery")) {
+    if (lowerName.includes("holder")) {
+      return "battery_holder"
+    }
+    return "battery"
+  } else if (lowerName.includes("transformer")) {
+    return "transformer"
+  } else if (lowerName.includes("power") || lowerName.includes("voltage source")) {
+    return "voltage_source"
+  } else if (lowerName.includes("current source")) {
+    return "current_source"
+  } else if (lowerName.includes("gnd") || lowerName.includes("ground")) {
     return "ground"
   } else if (lowerName.includes("connector") || lowerName.includes("conn_")) {
     return "connector"
@@ -492,12 +694,13 @@ export const getComponentTypeFromName = (name: string): string => {
     return "fuse"
   } else if (lowerName.includes("relay")) {
     return "relay"
-  } else if (lowerName.includes("transformer")) {
-    return "transformer"
-  } else if (lowerName.includes("buzzer")) {
-    return "buzzer"
+  } else if (lowerName.includes("crystal") || lowerName.includes("oscillator")) {
+    return "crystal"
+  } else if (lowerName.includes("speaker")) {
+    return "speaker"
+  } else if (lowerName.includes("microphone") || lowerName.includes("mic")) {
+    return "microphone"
   } else {
     return "ic" // Default to IC for unknown components
   }
 }
-
