@@ -314,26 +314,25 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
 
   const updateComponent = useCallback((id: string, updates: Partial<Component>) => {
     // Protect connections from being modified in case of errors
-    if ('connections' in updates && updates.connections === null) {
+    if ("connections" in updates && updates.connections === null) {
       // If connections are being reset to null due to an error, skip this update
       console.warn(`Prevented connection reset for component ${id} due to error`)
-      
+
       // Create a new updates object without the connections property
       const { connections, ...safeUpdates } = updates
-      
+
       // Only apply the safe updates
       setComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
       setSchematicComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
       setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...safeUpdates } : comp)))
       return
     }
-    
+
     // Normal update path
     setComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
     setSchematicComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
     setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
   }, [])
-  
 
   const updatePcbComponent = useCallback((id: string, updates: Partial<Component>) => {
     setPcbComponents((prev) => prev.map((comp) => (comp.id === id ? { ...comp, ...updates } : comp)))
@@ -355,28 +354,37 @@ export function CircuitComponentProvider({ children }: { children: React.ReactNo
         // Create a deep copy of the component with its connections preserved
         const componentWithConnections = {
           ...component,
-          connections: [...component.connections] // Ensure connections array is preserved
+          connections: [...component.connections], // Ensure connections array is preserved
         }
-        
+
         // Add to PCB components with connections intact
         setPcbComponents((prev) => [...prev, componentWithConnections])
-        
+
+        // Find all connections involving this component
+        const componentConnections = connections.filter((conn) => conn.start === id || conn.end === id)
+
+        // Log for debugging
+        console.log(
+          `Component ${component.name} moved to PCB view with ${component.connections.length} connections and ${componentConnections.length} connection records`,
+        )
+
         // No need to duplicate connections - they're shared between views
         // The connections state is already being used by both views
-        
-        console.log(`Component ${component.name} moved to PCB view with ${component.connections.length} connections`)
       }
     },
-    [schematicComponents, pcbComponents],
-  );
-  
-  
+    [schematicComponents, pcbComponents, connections],
+  )
 
   const addConnection = useCallback((connection: Omit<Connection, "id">) => {
     const id = uuidv4()
     const newConnection = {
       ...connection,
       id,
+      // Ensure these properties are always set
+      startPinIndex: connection.startPinIndex ?? 0,
+      endPinIndex: connection.endPinIndex ?? 0,
+      startPinType: connection.startPinType || "other",
+      endPinType: connection.endPinType || "other",
     }
     setConnections((prev) => [...prev, newConnection])
     return id

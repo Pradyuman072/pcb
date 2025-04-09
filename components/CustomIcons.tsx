@@ -8,14 +8,16 @@ import type React from "react"
 export const ResistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.7,0 L-0.5,0.3 L-0.3,-0.3 L-0.1,0.3 L0.1,-0.3 L0.3,0.3 L0.5,-0.3 L0.7,0 L1,0" />
+    <path d="M2 12h4" />
+    <path d="M18 12h4" />
+    <path d="M6 12l1.5 2l3-4l3 4l3-4l1.5 2" />
   </svg>
 )
 
@@ -23,17 +25,17 @@ export const ResistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const CapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.3,0" />
-    <path d="M-0.3,-0.6 L-0.3,0.6" />
-    <path d="M0.3,-0.6 L0.3,0.6" />
-    <path d="M0.3,0 L1,0" />
+    <path d="M2 12h8" />
+    <path d="M14 12h8" />
+    <path d="M10 6v12" />
+    <path d="M14 6v12" />
   </svg>
 )
 
@@ -41,19 +43,19 @@ export const CapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const PolarizedCapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.3,0" />
-    <path d="M-0.3,-0.6 L-0.3,0.6" />
-    <path d="M0.3,-0.6 L0.3,0.6" />
-    <path d="M0.3,0 L1,0" />
-    <path d="M-0.5,-0.3 L-0.5,0.3" />
-    <path d="M-0.6,0 L-0.4,0" />
+    <path d="M2 12h8" />
+    <path d="M14 12h8" />
+    <path d="M10 6v12" />
+    <path d="M14 6v12" />
+    <path d="M7 8v8" />
+    <path d="M5 10h4" />
   </svg>
 )
 
@@ -61,21 +63,18 @@ export const PolarizedCapacitorIcon = (props: React.SVGProps<SVGSVGElement>) => 
 export const InductorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M-0.7,0 C-0.7,0.3 -0.5,0.3 -0.5,0" />
-    <path d="M-0.5,0 C-0.5,0.3 -0.3,0.3 -0.3,0" />
-    <path d="M-0.3,0 C-0.3,0.3 -0.1,0.3 -0.1,0" />
-    <path d="M-0.1,0 C-0.1,0.3 0.1,0.3 0.1,0" />
-    <path d="M0.1,0 C0.1,0.3 0.3,0.3 0.3,0" />
-    <path d="M0.3,0 C0.3,0.3 0.5,0.3 0.5,0" />
-    <path d="M0.5,0 L1,0" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="M4 12c0-2 2-4 4-4s4 2 4 0s-2-4-4-4" />
+    <path d="M8 12c0-2 2-4 4-4s4 2 4 0" />
+    <path d="M12 12c0-2 2-4 4-4s4 2 4 0" />
   </svg>
 )
 
@@ -83,17 +82,17 @@ export const InductorIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const DiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.3,0" />
-    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
-    <path d="M0.3,-0.4 L0.3,0.4" />
-    <path d="M0.3,0 L1,0" />
+    <path d="M2 12h6" />
+    <path d="M16 12h6" />
+    <polygon points="8 6 16 12 8 18 8 6" />
+    <line x1="16" y1="6" x2="16" y2="18" />
   </svg>
 )
 
@@ -101,19 +100,18 @@ export const DiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const ZenerDiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.3,0" />
-    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
-    <path d="M0.3,-0.4 L0.3,0.4" />
-    <path d="M0.3,0.4 L0.5,0.4" />
-    <path d="M0.3,-0.4 L0.1,-0.4" />
-    <path d="M0.3,0 L1,0" />
+    <path d="M2 12h6" />
+    <path d="M16 12h6" />
+    <polygon points="8 6 16 12 8 18 8 6" />
+    <path d="M16 6l-2 3" />
+    <path d="M16 18l2-3" />
   </svg>
 )
 
@@ -121,19 +119,20 @@ export const ZenerDiodeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const LEDIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.3,0" />
-    <path d="M-0.3,-0.4 L-0.3,0.4 L0.3,0 L-0.3,-0.4 Z" />
-    <path d="M0.3,-0.4 L0.3,0.4" />
-    <path d="M0.3,0 L1,0" />
-    <path d="M0.4,-0.2 L0.6,-0.4" />
-    <path d="M0.6,-0.2 L0.8,-0.4" />
+    <path d="M2 12h6" />
+    <path d="M16 12h6" />
+    <polygon points="8 6 16 12 8 18 8 6" />
+    <line x1="16" y1="6" x2="16" y2="18" />
+    <path d="M18 2l2 2" />
+    <path d="M20 4l2 2" />
+    <path d="M19 7l2-2" />
   </svg>
 )
 
@@ -141,22 +140,19 @@ export const LEDIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const TransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="0" cy="0" r="0.5" />
-    <path d="M-0.5,0.3 L0.3,0.3" />
-    <path d="M-0.5,-0.3 L0.3,-0.3" />
-    <path d="M-1,0 L-0.5,0" />
-    <path d="M-0.5,-0.5 L-0.5,0.5" />
-    <path d="M0.3,0.3 L0.7,0.7" />
-    <path d="M0.3,-0.3 L0.7,-0.7" />
-    <path d="M0.7,0.7 L1,0.7" />
-    <path d="M0.7,-0.7 L1,-0.7" />
+    <circle cx="12" cy="12" r="6" />
+    <line x1="12" y1="6" x2="12" y2="2" />
+    <line x1="6" y1="12" x2="2" y2="12" />
+    <line x1="12" y1="18" x2="12" y2="22" />
+    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
   </svg>
 )
 
@@ -164,24 +160,20 @@ export const TransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const PNPTransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="0" cy="0" r="0.5" />
-    <path d="M-0.5,0.3 L0.3,0.3" />
-    <path d="M-0.5,-0.3 L0.3,-0.3" />
-    <path d="M-1,0 L-0.5,0" />
-    <path d="M-0.5,-0.5 L-0.5,0.5" />
-    <path d="M0.3,0.3 L0.7,0.7" />
-    <path d="M0.3,-0.3 L0.7,-0.7" />
-    <path d="M0.7,0.7 L1,0.7" />
-    <path d="M0.7,-0.7 L1,-0.7" />
-    <path d="M0.3,0.3 L0.5,0.1" />
-    <path d="M0.3,-0.3 L0.5,-0.1" />
+    <circle cx="12" cy="12" r="6" />
+    <line x1="12" y1="6" x2="12" y2="2" />
+    <line x1="6" y1="12" x2="2" y2="12" />
+    <line x1="12" y1="18" x2="12" y2="22" />
+    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+    <line x1="9" y1="9" x2="6" y2="12" />
   </svg>
 )
 
@@ -189,22 +181,18 @@ export const PNPTransistorIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const MOSFETIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.5,0" />
-    <path d="M-0.5,-0.5 L-0.5,0.5" />
-    <path d="M-0.5,0 L-0.3,0" />
-    <path d="M-0.3,-0.5 L-0.3,0.5" />
-    <path d="M-0.3,-0.3 L0.3,-0.3 L0.3,-0.7 L0.7,-0.7 L0.7,-0.3" />
-    <path d="M-0.3,0.3 L0.3,0.3 L0.3,0.7 L0.7,0.7 L0.7,0.3" />
-    <path d="M0.7,-0.7 L1,-0.7" />
-    <path d="M0.7,0.7 L1,0.7" />
-    <path d="M0.7,0 L1,0" />
+    <rect x="8" y="6" width="8" height="12" rx="1" />
+    <line x1="2" y1="12" x2="8" y2="12" />
+    <line x1="16" y1="8" x2="22" y2="8" />
+    <line x1="16" y1="16" x2="22" y2="16" />
+    <line x1="22" y1="8" x2="22" y2="16" />
   </svg>
 )
 
@@ -212,21 +200,22 @@ export const MOSFETIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const ChipIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect x="-0.5" y="-0.5" width="1" height="1" />
-    <path d="M-1,0.3 L-0.5,0.3" />
-    <path d="M-1,0 L-0.5,0" />
-    <path d="M-1,-0.3 L-0.5,-0.3" />
-    <path d="M0.5,0.3 L1,0.3" />
-    <path d="M0.5,0 L1,0" />
-    <path d="M0.5,-0.3 L1,-0.3" />
-    <circle cx="-0.7" cy="-0.7" r="0.1" />
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <line x1="9" y1="4" x2="9" y2="2" />
+    <line x1="15" y1="4" x2="15" y2="2" />
+    <line x1="9" y1="22" x2="9" y2="20" />
+    <line x1="15" y1="22" x2="15" y2="20" />
+    <line x1="4" y1="9" x2="2" y2="9" />
+    <line x1="4" y1="15" x2="2" y2="15" />
+    <line x1="22" y1="9" x2="20" y2="9" />
+    <line x1="22" y1="15" x2="20" y2="15" />
   </svg>
 )
 
@@ -234,18 +223,18 @@ export const ChipIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const SwitchIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.5,0" />
-    <circle cx="-0.3" cy="0" r="0.2" />
-    <path d="M-0.3,0 L0.5,-0.3" />
-    <circle cx="0.3" cy="0" r="0.2" />
-    <path d="M0.3,0 L1,0" />
+    <path d="M2 12h6" />
+    <circle cx="10" cy="12" r="2" />
+    <path d="M10 12l6-6" />
+    <circle cx="16" cy="6" r="2" />
+    <path d="M16 6h6" />
   </svg>
 )
 
@@ -253,17 +242,18 @@ export const SwitchIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const VoltmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="0" cy="0" r="0.7" />
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M0.7,0 L1,0" />
-    <text x="0" y="0.15" fontSize="0.5" textAnchor="middle" fill="currentColor">V</text>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="M10 9l2 3l2-3" />
+    <path d="M12 12v3" />
   </svg>
 )
 
@@ -271,17 +261,19 @@ export const VoltmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const AmmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="0" cy="0" r="0.7" />
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M0.7,0 L1,0" />
-    <text x="0" y="0.15" fontSize="0.5" textAnchor="middle" fill="currentColor">A</text>
+    <circle cx="12" cy="12" r="8" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="M10 10h4" />
+    <path d="M10 14h4" />
+    <path d="M12 10v4" />
   </svg>
 )
 
@@ -289,18 +281,21 @@ export const AmmeterIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const OscilloscopeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect x="-0.7" y="-0.7" width="1.4" height="1.4" rx="0.2" />
-    <circle cx="0" cy="0" r="0.5" />
-    <path d="M-0.4,0 L-0.2,-0.2 L0,0 L0.2,0.2 L0.4,0" />
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M0.7,0 L1,0" />
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="12" cy="12" r="5" />
+    <path d="M9 12h6" />
+    <path d="M12 9v6" />
+    <path d="M3 9h2" />
+    <path d="M3 15h2" />
+    <path d="M19 9h2" />
+    <path d="M19 15h2" />
   </svg>
 )
 
@@ -308,18 +303,19 @@ export const OscilloscopeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const BatteryIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M-1,0 L-0.6,0" />
-    <path d="M-0.6,-0.4 L-0.6,0.4" />
-    <path d="M-0.3,-0.7 L-0.3,0.7" />
-    <path d="M0.3,-0.4 L0.3,0.4" />
-    <path d="M0.3,0 L1,0" />
+    <path d="M2 12h4" />
+    <path d="M18 12h4" />
+    <line x1="6" y1="7" x2="6" y2="17" strokeWidth="2" />
+    <line x1="10" y1="5" x2="10" y2="19" strokeWidth="2" />
+    <line x1="14" y1="7" x2="14" y2="17" strokeWidth="2" />
+    <line x1="18" y1="9" x2="18" y2="15" strokeWidth="2" />
   </svg>
 )
 
@@ -327,21 +323,19 @@ export const BatteryIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const BatteryHolderIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <rect x="-0.7" y="-0.4" width="1.4" height="0.8" rx="0.1" />
-    <path d="M-0.5,-0.4 L-0.5,-0.6" />
-    <path d="M0.5,-0.4 L0.5,-0.6" />
-    <path d="M-0.3,-0.1 L-0.3,0.1" />
-    <path d="M0,-0.2 L0,0.2" />
-    <path d="M0.3,-0.1 L0.3,0.1" />
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M0.7,0 L1,0" />
+    <rect x="4" y="6" width="16" height="12" rx="2" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="8" y1="6" x2="8" y2="4" />
+    <line x1="16" y1="6" x2="16" y2="4" />
+    <line x1="2" y1="12" x2="4" y2="12" />
+    <line x1="20" y1="12" x2="22" y2="12" />
   </svg>
 )
 
@@ -349,19 +343,19 @@ export const BatteryHolderIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export const VoltageSourceIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
-    viewBox="-1 -1 2 2"
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="0.1"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="0" cy="0" r="0.7" />
-    <path d="M-1,0 L-0.7,0" />
-    <path d="M0.7,0 L1,0" />
-    <path d="M-0.2,-0.2 L-0.2,0.2" />
-    <path d="M0.2,-0.2 L0.2,0.2" />
-    <path d="M-0.2,0 L0.2,0" />
+    <circle cx="12" cy="12" r="8" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <line x1="9" y1="9" x2="9" y2="15" />
+    <line x1="15" y1="9" x2="15" y2="15" />
+    <line x1="9" y1="12" x2="15" y2="12" />
   </svg>
 )
 
@@ -374,7 +368,7 @@ export const CurrentSourceIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -396,7 +390,7 @@ export const GroundIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -417,7 +411,7 @@ export const ConnectorIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -439,7 +433,7 @@ export const PotentiometerIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -461,7 +455,7 @@ export const FuseIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -482,7 +476,7 @@ export const RelayIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -506,7 +500,7 @@ export const CrystalIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -528,7 +522,7 @@ export const SpeakerIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
@@ -538,18 +532,52 @@ export const SpeakerIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M18 7c2 2 2 8 0 10" />
   </svg>
 )
+
+// Transformer (completely redesigned to be more recognizable)
 export const TransformerIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} viewBox="0 0 24 24" stroke="currentColor" fill="none">
+  <svg
+    {...props}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Iron Core */}
+    <rect x="11" y="2" width="2" height="20" fill="#888" stroke="none" />
+    <rect x="11" y="2" width="2" height="20" fill="none" stroke="currentColor" />
+
     {/* Primary Coil */}
-    <path d="M3 12h3m-3 0h3m-3 0V6m0 6v6m0-6h18m-18 0h18m0 0V6m0 6v6m0-6H3m18 0H3" 
-          strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M2 12h3" />
+    <circle cx="7" cy="6" r="1.5" fill="none" />
+    <circle cx="7" cy="9" r="1.5" fill="none" />
+    <circle cx="7" cy="12" r="1.5" fill="none" />
+    <circle cx="7" cy="15" r="1.5" fill="none" />
+    <circle cx="7" cy="18" r="1.5" fill="none" />
+    <line x1="7" y1="4.5" x2="7" y2="19.5" />
+    <line x1="7" y1="6" x2="11" y2="6" />
+    <line x1="7" y1="9" x2="11" y2="9" />
+    <line x1="7" y1="12" x2="11" y2="12" />
+    <line x1="7" y1="15" x2="11" y2="15" />
+    <line x1="7" y1="18" x2="11" y2="18" />
+
     {/* Secondary Coil */}
-    <path d="M21 12h-3m3 0h-3m3 0V6m0 6v6" 
-          strokeWidth="1.5" strokeLinecap="round"/>
-    {/* Core Line */}
-    <line x1="12" y1="2" x2="12" y2="22" strokeWidth="2"/>
+    <path d="M19 12h3" />
+    <circle cx="17" cy="6" r="1.5" fill="none" />
+    <circle cx="17" cy="9" r="1.5" fill="none" />
+    <circle cx="17" cy="12" r="1.5" fill="none" />
+    <circle cx="17" cy="15" r="1.5" fill="none" />
+    <circle cx="17" cy="18" r="1.5" fill="none" />
+    <line x1="17" y1="4.5" x2="17" y2="19.5" />
+    <line x1="13" y1="6" x2="17" y2="6" />
+    <line x1="13" y1="9" x2="17" y2="9" />
+    <line x1="13" y1="12" x2="17" y2="12" />
+    <line x1="13" y1="15" x2="17" y2="15" />
+    <line x1="13" y1="18" x2="17" y2="18" />
   </svg>
 )
+
 // Microphone
 export const MicrophoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -559,7 +587,7 @@ export const MicrophoneIcon = (props: React.SVGProps<SVGSVGElement>) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     {...props}
